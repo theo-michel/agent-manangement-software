@@ -1,28 +1,9 @@
-<p align="center">
-  <a href="https://www.vintasoftware.com/blog/next-js-fastapi-template"><img src="https://cdn.prod.website-files.com/64b9f7763232fd7832edb089/67bcfe16c484e4960dcbf7fe_nextjs_and_fast_api_thumb.webp" alt="Next.js FastAPI Template"></a>
-</p>
-<p align="center">
-    <em>Next.js FastAPI Template: Python + Modern TypeScript stack with Zod validation.</em>
-</p>
-<p align="center">
-<a href="https://github.com/vintasoftware/nextjs-fastapi-template/actions/workflows/ci.yml" target="_blank">
-    <img src="https://github.com/vintasoftware/nextjs-fastapi-template/actions/workflows/ci.yml/badge.svg" alt="CI">
-</a>
-<a href="https://coveralls.io/github/vintasoftware/nextjs-fastapi-template" target="_blank">
-    <img src="https://coveralls.io/repos/github/vintasoftware/nextjs-fastapi-template/badge.svg" alt="Coverage">
-</a>
-</p>
-
 ---
 **Source Code**: <a href="https://github.com/vintasoftware/nextjs-fastapi-template" target="_blank">https://github.com/vintasoftware/nextjs-fastapi-template</a>
 
 ---
 
-# Next.js FastAPI Template
-Introducing the Next.js FastAPI Template: A cutting-edge foundation for modern full-stack development that seamlessly integrates Next.js with FastAPI. This template combines Python's backend power with TypeScript's frontend, enhanced by Zod's robust type validation. Perfect for developers seeking a production-ready architecture that balances performance, type safety, and developer experience in one cohesive package.
-
 ## Table of Contents
-* [About](#about)
 * [Production-Ready Authentication & Dashboard](#production-ready-authentication-and-dashboard)
 * [Getting Started with This Template](#getting-started-with-this-template)
 * [Setup](#local-setup)
@@ -90,22 +71,6 @@ This template streamlines building APIs with [FastAPI](https://fastapi.tiangolo.
 - [OpenAPI JSON schema](https://swagger.io/specification/): Centralized API documentation and client generation  
 
 With this setup, you'll save time and maintain a seamless connection between your backend and frontend, boosting productivity and reliability.
-
-## Production-Ready Authentication & Dashboard Features
-This template comes with a pre-configured authentication system and a simple dashboard interface, allowing you to start building your application with user management features immediately.
-
-## Getting Started with This Template
-
-To use this template for your own project:
-
-1. Create a new repository using this template by following GitHub's [template repository guide](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template#creating-a-repository-from-a-template)
-2. Clone your new repository and navigate to it: `cd your-project-name`
-3. Update this README:
-   - Change the project name in the first line
-   - Remove this "Getting Started with This Template" section
-4. Make sure you have Python 3.12 installed
-
-Once completed, proceed to the [Setup](#setup) section below.
 
 ## Setup
 
