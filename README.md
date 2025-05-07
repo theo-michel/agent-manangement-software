@@ -1,7 +1,4 @@
----
-**Source Code**: <a href="https://github.com/vintasoftware/nextjs-fastapi-template" target="_blank">https://github.com/vintasoftware/nextjs-fastapi-template</a>
 
----
 
 ## Table of Contents
 * [Production-Ready Authentication & Dashboard](#production-ready-authentication-and-dashboard)
