@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import update
 from typing import List, Dict, Any, Optional
 import stripe
 from datetime import datetime
+import logging
 
 from app.database import get_async_session
 from app.config import settings
@@ -19,8 +20,10 @@ from app.services.extract_github.schema import (
     FileDescription,
 )
 from app.services.extract_github.service import GitHubService
+from fastapi_backend.app.services.repository.service import RepositoryService
 
 router = APIRouter(prefix="/repos", tags=["repository"])
+logger = logging.getLogger(__name__)
 
 # Initialize Stripe
 if settings.STRIPE_API_KEY:
@@ -28,6 +31,9 @@ if settings.STRIPE_API_KEY:
 
 # Initialize GitHub service
 github_service = GitHubService(settings.GITHUB_TOKEN)
+
+# Initialize service
+repository_service = RepositoryService()
 
 
 @router.get("/{owner}/{repo}/status", response_model=RepositoryStatusResponse)
@@ -37,27 +43,8 @@ async def get_repository_status(
     """
     Check the indexing status of a repository.
     """
-    # Check if repository exists in the database
-    result = await session.execute(
-        select(Repository).where(Repository.full_name == f"{owner}/{repo}")
-    )
-    repository = result.scalars().first()
-
-    if repository:
-        return RepositoryStatusResponse(
-            status=repository.status,
-            file_count=len(repository.files) if repository.files else None,
-            indexed_at=repository.indexed_at.isoformat() if repository.indexed_at else None,
-        )
-
-    # Repository not in database, get file count for estimation
     try:
-        file_count = await github_service.count_files(owner, repo)
-        return RepositoryStatusResponse(
-            status=RepoStatus.NOT_INDEXED,
-            file_count=file_count,
-            message="Repository not indexed yet",
-        )
+        return await repository_service.get_repository_status(owner, repo, session)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -66,160 +53,29 @@ async def get_repository_status(
 async def index_repository(
     owner: str,
     repo: str,
-    background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_async_session),
 ):
     """
     Start the indexing process for a repository.
     Creates a Stripe checkout session for payment.
     """
-    # Check repository status
-    result = await session.execute(
-        select(Repository).where(Repository.full_name == f"{owner}/{repo}")
-    )
-    repository = result.scalars().first()
-
-    # If already indexed or pending, return status
-    if repository and repository.status in [RepoStatus.INDEXED, RepoStatus.PENDING]:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Repository already {repository.status.value}",
-        )
-
-    # Get repository information from GitHub
     try:
-        repo_info = await github_service.get_repository_info(owner, repo)
-        file_count = await github_service.count_files(owner, repo)
+        return await repository_service.start_indexing(owner, repo, session)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-
-    # Calculate price (e.g., $0.01 per file with a cap)
-    price_per_file = settings.PRICE_PER_FILE  # e.g., 0.01 in dollars
-    max_price = settings.MAX_PRICE  # e.g., 10.00 in dollars
-    total_price = min(file_count * price_per_file, max_price)
-    
-    # Format price for Stripe (in cents)
-    price_in_cents = int(total_price * 100)
-    
-    if price_in_cents <= 0:
-        price_in_cents = 100  # Minimum $1
-
-    # Create or update repository in database
-    if repository:
-        repository.status = RepoStatus.PENDING
-        repository.github_id = repo_info["id"]
-        repository.description = repo_info["description"]
-        repository.default_branch = repo_info["default_branch"]
-        repository.stars = repo_info["stars"]
-        repository.forks = repo_info["forks"]
-        repository.size = repo_info["size"]
-        repository.updated_at = datetime.utcnow()
-    else:
-        repository = Repository(
-            github_id=repo_info["id"],
-            owner=owner,
-            name=repo,
-            full_name=f"{owner}/{repo}",
-            description=repo_info["description"],
-            default_branch=repo_info["default_branch"],
-            stars=repo_info["stars"],
-            forks=repo_info["forks"],
-            size=repo_info["size"],
-            status=RepoStatus.PENDING,
-        )
-        session.add(repository)
-    
-    await session.commit()
-    await session.refresh(repository)
-
-    # Create Stripe checkout session
-    if not settings.STRIPE_API_KEY:
-        # For development without Stripe, start indexing immediately
-        background_tasks.add_task(
-            start_indexing_task, owner, repo, repository.id
-        )
-        return CheckoutResponse(checkout_url="http://localhost:8000/mock-payment-success")
-
-    checkout_session = stripe.checkout.Session.create(
-        payment_method_types=["card"],
-        line_items=[
-            {
-                "price_data": {
-                    "currency": "usd",
-                    "product_data": {
-                        "name": f"Index Repository: {owner}/{repo}",
-                        "description": f"Indexing {file_count} files for AI-powered documentation and chat",
-                    },
-                    "unit_amount": price_in_cents,
-                },
-                "quantity": 1,
-            }
-        ],
-        mode="payment",
-        success_url=f"{settings.FRONTEND_URL}/{owner}/{repo}?success=true",
-        cancel_url=f"{settings.FRONTEND_URL}/{owner}/{repo}?canceled=true",
-        metadata={
-            "repository_id": repository.id,
-            "owner": owner,
-            "repo": repo,
-        },
-    )
-
-    # Update repository with checkout session ID
-    repository.checkout_session_id = checkout_session.id
-    await session.commit()
-
-    return CheckoutResponse(checkout_url=checkout_session.url)
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/webhook", include_in_schema=False)
 async def stripe_webhook(
-    request: Dict[str, Any], session: AsyncSession = Depends(get_async_session)
+    request: Request, session: AsyncSession = Depends(get_async_session)
 ):
     """
     Webhook for handling Stripe payment events.
     """
-    if not settings.STRIPE_WEBHOOK_SECRET:
-        # For development without Stripe webhook
-        return {"status": "success"}
-
-    # Get the signature from headers
-    signature = request.headers.get("stripe-signature")
-    
     try:
-        event = stripe.Webhook.construct_event(
-            payload=request.body,
-            sig_header=signature,
-            secret=settings.STRIPE_WEBHOOK_SECRET
-        )
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid payload")
-    except stripe.error.SignatureVerificationError:
-        raise HTTPException(status_code=400, detail="Invalid signature")
-
-    # Handle checkout.session.completed event
-    if event["type"] == "checkout.session.completed":
-        session_id = event["data"]["object"]["id"]
-        
-        # Get repository from database using session_id
-        result = await session.execute(
-            select(Repository).where(Repository.checkout_session_id == session_id)
-        )
-        repository = result.scalars().first()
-        
-        if repository:
-            # Start indexing task
-            background_tasks = BackgroundTasks()
-            background_tasks.add_task(
-                start_indexing_task, 
-                repository.owner, 
-                repository.name, 
-                repository.id
-            )
-            
-            return {"status": "success"}
-    
-    return {"status": "ignored"}
+        return await repository_service.process_webhook(request, session)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/{owner}/{repo}/docs", response_model=DocsResponse)
