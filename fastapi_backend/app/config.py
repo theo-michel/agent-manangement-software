@@ -37,6 +37,23 @@ class Settings(BaseSettings):
 
     # CORS
     CORS_ORIGINS: Set[str]
+    
+    # GitHub
+    GITHUB_TOKEN: str | None = None
+    
+    # Stripe
+    STRIPE_API_KEY: str | None = None
+    STRIPE_WEBHOOK_SECRET: str | None = None
+    PRICE_PER_FILE: float = 0.01  # in dollars
+    MAX_PRICE: float = 10.0  # in dollars
+    
+    # OpenAI
+    OPENAI_API_KEY: str | None = None
+    
+    # Vector Database (Pinecone)
+    PINECONE_API_KEY: str | None = None
+    PINECONE_ENVIRONMENT: str = "gcp-starter"
+    PINECONE_INDEX: str = "deepgithub"
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"

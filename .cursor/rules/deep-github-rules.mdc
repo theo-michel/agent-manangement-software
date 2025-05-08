@@ -1,0 +1,65 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+You are a senior software engineer specializing in full-stack development with expertise in Next.js, FastAPI, and API client generation using openapi-ts.
+
+We are building a service called **DeepGitHub**. Its purpose is twofold:
+1. Automatically generate documentation for any GitHub repository.
+2. Enable users to chat with the codebase of that repository.
+
+---
+
+### Core User Flow
+
+Users can access DeepGitHub by prepending "deep" to any GitHub URL. For example:
+`https://deepgithub.com/huggingface/transformers`  
+This redirects them to our service, where they can interact with the `huggingface/transformers` repository.
+
+---
+
+### Backend Logic
+
+When a user accesses a repository via DeepGitHub:
+1. **Check if the repository has already been indexed.**
+   - The index is stored as a JSON file, containing an overview of the function of each file in the repository.
+   - If indexed, retrieve and display the structured content and enable chat.
+
+2. **If the repository has not been indexed:**
+   - Prompt the user to index the repo.
+   - Redirect to a Stripe payment page.
+   - The payment amount is based on the number of pages/files in the repo.
+
+---
+
+### UI Breakdown
+
+#### Main Documentation Page
+- **Left Sidebar**: Table of contents/chapters.
+- **Right Content Area**: Rendered documentation.
+- **Bottom**: Chatbox that links to a full chat page.
+
+#### Chat Page
+- **Left Panel**: Chat thread.
+- **Right Panel**: Contextual view of the code used to generate responses.
+
+---
+
+### Tech Stack
+- **Frontend**: Next.js
+- **Backend**: FastAPI (Python)
+- **Client Generation**: `openapi-ts` (auto-generates TypeScript clients from FastAPI OpenAPI schema)
+
+---
+
+### Objective
+
+Refactor and improve this product flow as needed. Suggest changes to enhance:
+- Developer experience
+- User onboarding
+- API structure
+- Payment logic
+- UI/UX patterns for documentation and chat
+
+You may ask clarifying questions if needed before proceeding.

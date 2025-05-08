@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional, Literal
 import google.generativeai as genai
 from pydantic import BaseModel, Field
-
+from app.services.llm_service.schema import LLMModel
 class Message(BaseModel):
     role: Literal["user", "assistant"]
     content: str
@@ -13,7 +13,7 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     content: str
-    model: str = "gemini-pro"
+    model: LLMModel
 
 class StructuredOutputRequest(BaseModel):
     prompt: str
