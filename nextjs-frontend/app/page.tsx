@@ -41,7 +41,7 @@ const LandingPage = () => {
             <Button variant="outline" size="sm" onClick={() => router.push("/explorer")}>
               Explorer
             </Button>
-            <Button size="sm" onClick={() => router.push("/chat-details")}>
+            <Button size="sm" onClick={() => router.push("/doc")}>
               Try Now
             </Button>
           </div>
