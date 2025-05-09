@@ -9,7 +9,7 @@ import logging
 
 from app.database import get_async_session
 from app.config import settings
-from app.models.repo_models import Repository, RepositoryFile, CodeUnit, RepoStatus
+from app.models.models import Repository, RepositoryFile, CodeUnit, RepoStatus
 from app.services.extract_github.schema import (
     RepositoryStatusResponse,
     IndexingRequest,
@@ -20,7 +20,7 @@ from app.services.extract_github.schema import (
     FileDescription,
 )
 from app.services.extract_github.service import GitHubService
-from fastapi_backend.app.services.repository.service import RepositoryService
+from fastapi_backend.app.services.github_repository.service import GithubRepositoryService
 
 router = APIRouter(prefix="/repos", tags=["repository"])
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ if settings.STRIPE_API_KEY:
 github_service = GitHubService(settings.GITHUB_TOKEN)
 
 # Initialize service
-repository_service = RepositoryService()
+repository_service = GithubRepositoryService()
 
 
 @router.get("/{owner}/{repo}/status", response_model=RepositoryStatusResponse)

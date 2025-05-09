@@ -14,13 +14,13 @@ from app.services.extract_github.schema import (
     CheckoutResponse,
     RepoStatus as SchemaRepoStatus
 )
-from app.models.repo_models import Repository, RepositoryFile, RepoStatus
+from app.models.models import Repository, RepositoryFile, RepoStatus
 from app.config import settings
 from app.tasks.indexing import index_repository
 
 logger = logging.getLogger(__name__)
 
-class RepositoryService:
+class GithubRepositoryService:
     def __init__(self, github_service: GitHubService = None):
         self.github_service = github_service or GitHubService(settings.GITHUB_TOKEN)
         if settings.STRIPE_API_KEY:
