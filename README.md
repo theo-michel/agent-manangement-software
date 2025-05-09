@@ -95,10 +95,10 @@ Ensure `docker-compose` is installed. Refer to the [Docker Compose installation 
 
 ### Setting Up Environment Variables
 
-**Backend (`fastapi_backend/.env`):**
+**Backend (`backend/.env`):**
 Copy the `.env.example` files to `.env` and update the variables with your own values.
    ```bash
-   cd fastapi_backend && cp .env.example .env
+   cd backend && cp .env.example .env
    ```
 1. You will only need to update the secret keys. You can use the following command to generate a new secret key:
    ```bash
@@ -131,7 +131,7 @@ To set the project environment locally, use the following commands:
 
 #### Backend
 
-1. Navigate to the `fastapi_backend` directory and run:
+1. Navigate to the `backend` directory and run:
    ```bash
    uv sync
    ```
@@ -187,7 +187,7 @@ You can manually execute the same commands that the hot reloads call when they d
 
 1. To export the `openapi.json` schema:
    ```bash
-   cd fastapi_backend && uv run python -m commands.generate_openapi_schema
+   cd backend && uv run python -m commands.generate_openapi_schema
    ```
    or using Docker:
    ```bash
@@ -308,7 +308,7 @@ VERIFICATION_SECRET_KEY: The secret key for email or user verification.
 
 ### Backend Deployment
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvintasoftware%2Fnextjs-fastapi-template%2Ftree%2Fmain%2Ffastapi_backend&env=CORS_ORIGINS,ACCESS_SECRET_KEY,RESET_PASSWORD_SECRET_KEY,VERIFICATION_SECRET_KEY&stores=%5B%7B%22type%22%3A%22postgres%22%7D%5D)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvintasoftware%2Fnextjs-fastapi-template%2Ftree%2Fmain%2Fbackend&env=CORS_ORIGINS,ACCESS_SECRET_KEY,RESET_PASSWORD_SECRET_KEY,VERIFICATION_SECRET_KEY&stores=%5B%7B%22type%22%3A%22postgres%22%7D%5D)
 
 1. **Deploying the Backend**  
    - Click the **Backend** button above to begin deployment.
@@ -382,11 +382,11 @@ You can do it with the following commands:
 
 ### Backend Setup
 
-1. Link the fastapi_backend Project
+1. Link the backend Project
 
-2. Navigate to the fastapi_backend directory and run:
+2. Navigate to the backend directory and run:
    ```bash
-   cd fastapi_backend
+   cd backend
    vercel link --local-config=vercel.prod.json
    ```
    - We use a specific configuration file to set the --local-config value.
@@ -395,7 +395,7 @@ You can do it with the following commands:
    - Modify settings? No
 
 4. Save Project IDs and Add GitHub Secrets:
-  - Open `fastapi_backend/.vercel/project.json` and add the following to your GitHub repository secrets:
+  - Open `backend/.vercel/project.json` and add the following to your GitHub repository secrets:
     - `projectId` → `VERCEL_PROJECT_ID_BACKEND`
     - `orgId` → `VERCEL_ORG_ID` (Only in case you haven't added that before)
 

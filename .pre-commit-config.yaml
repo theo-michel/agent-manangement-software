@@ -52,7 +52,7 @@ repos:
         pass_filenames: false
       - id: generate-openapi-schema
         name: generate OpenAPI schema
-        entry: sh -c 'cd fastapi_backend && uv run python -m commands.generate_openapi_schema'
+        entry: sh -c 'cd backend && uv run python -m commands.generate_openapi_schema'
         language: system
         # Only run OpenAPI schema generation if schemas.py, main.py or package version have changed:
         files: (main\.py$|schemas\.py$|pyproject\.toml)
@@ -67,7 +67,7 @@ repos:
         # export requirements is required to vercel deploy
       - id: export-requirements
         name: Export requirements.txt
-        entry: sh -c 'cd fastapi_backend && uv export > requirements.txt'
+        entry: sh -c 'cd backend && uv export > requirements.txt'
         language: system
         files: uv.lock  # Trigger when uv.lock is modified
         pass_filenames: false

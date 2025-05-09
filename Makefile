@@ -1,7 +1,7 @@
 # Makefile
 
 # Variables
-BACKEND_DIR=fastapi_backend
+BACKEND_DIR=backend
 FRONTEND_DIR=nextjs-frontend
 DOCKER_COMPOSE=docker compose
 
