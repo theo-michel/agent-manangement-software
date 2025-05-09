@@ -20,7 +20,7 @@ from app.services.extract_github.schema import (
     FileDescription,
 )
 from app.services.extract_github.service import GitHubService
-from fastapi_backend.app.services.github_repository.service import GithubRepositoryService
+from backend.app.services.github_repository.service import GithubRepositoryService
 
 router = APIRouter(prefix="/repos", tags=["repository"])
 logger = logging.getLogger(__name__)

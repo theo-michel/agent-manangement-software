@@ -7,7 +7,7 @@ from sqlalchemy import update
 from app.database import get_async_session
 from app.models.models import Repository, RepositoryFile, CodeUnit, RepoStatus
 from app.services.extract_github.service import GitHubService
-from fastapi_backend.app.services.ai.service import AIService
+from backend.app.services.ai.service import AIService
 from app.config import settings
 
 logger = logging.getLogger(__name__)

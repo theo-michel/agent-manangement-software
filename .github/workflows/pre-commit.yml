@@ -32,7 +32,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
 
       - name: Install the project
-        working-directory: ./fastapi_backend
+        working-directory: ./backend
         run: uv sync --all-extras --dev
 
       - name: Install pnpm

@@ -1,6 +1,6 @@
 # Changelog
 
-This changelog references changes made both to the FastAPI backend, `fastapi_backend`, and the
+This changelog references changes made both to the FastAPI backend, `backend`, and the
 frontend TypeScript client, `nextjs-frontend`.
 
 !!! note

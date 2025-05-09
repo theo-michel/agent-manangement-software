@@ -41,15 +41,15 @@ jobs:
         uses: astral-sh/setup-uv@v5
 
       - name: Install the project
-        working-directory: ./fastapi_backend
+        working-directory: ./backend
         run: uv sync --all-extras --dev
 
       - name: Run tests
-        working-directory: ./fastapi_backend
+        working-directory: ./backend
         run: uv run coverage run -m pytest
 
       - name: Generate XML coverage report
-        working-directory: ./fastapi_backend
+        working-directory: ./backend
         run: uv run coverage xml -o coverage.xml
 
       - name: Coveralls GitHub Action
@@ -58,7 +58,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           flag-name: python-coverage
           parallel: true
-          path-to-lcov: fastapi_backend/coverage.xml
+          path-to-lcov: backend/coverage.xml
 
   build-frontend:
     name: Next.js CI
