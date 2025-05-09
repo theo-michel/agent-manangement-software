@@ -1,44 +1,115 @@
+"use client"
+
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { FaGithub } from "react-icons/fa";
-import { Badge } from "@/components/ui/badge";
+import { Github } from "lucide-react";
+import { HeroSection } from "@/components/landing/HeroSection";
+import { HowItWorks } from "@/components/landing/HowItWorks";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 
-export default function Home() {
+const LandingPage = () => {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-8">
-      <div className="text-center max-w-2xl">
-        <h1 className="text-5xl font-bold text-gray-800 dark:text-white mb-6">
-          Welcome to the Next.js & FastAPI Boilerplate
-        </h1>
-        <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
-          A simple and powerful template to get started with full-stack
-          development using Next.js and FastAPI.
-        </p>
+    <div className="min-h-screen bg-background">
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-200 ${isScrolled
+          ? "bg-background/80 backdrop-blur-lg border-b border-muted"
+          : "bg-transparent"
+          }`}
+      >
+        <div className="flex items-center justify-between h-16 px-4 md:px-6">
+          <div className="flex items-center space-x-2">
+            <Github className="h-6 w-6" />
+            <h1 className="font-medium">ParisLabs</h1>
+          </div>
 
-        {/* Link to Dashboard */}
-        <Link href="/dashboard">
-          <Button className="px-8 py-4 text-xl font-semibold rounded-full shadow-lg bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 focus:ring-4 focus:ring-blue-300">
-            Go to Dashboard
-          </Button>
-        </Link>
-
-        {/* GitHub Badge */}
-        <div className="mt-6">
-          <Badge
-            variant="outline"
-            className="text-sm flex items-center gap-2 px-3 py-2 rounded-lg border-gray-300 dark:border-gray-700"
-          >
-            <FaGithub className="w-5 h-5 text-black dark:text-white" />
-            <Link
-              href="https://github.com/vintasoftware/nextjs-fastapi-template"
-              target="_blank"
-              className="hover:underline"
-            >
-              View on GitHub
-            </Link>
-          </Badge>
+          <div className="flex items-center space-x-4">
+            <ThemeToggle />
+            <Button variant="outline" size="sm" onClick={() => router.push("/explorer")}>
+              Explorer
+            </Button>
+            <Button size="sm" onClick={() => router.push("/chat-details")}>
+              Try Now
+            </Button>
+          </div>
         </div>
-      </div>
-    </main>
+      </header>
+
+      <main>
+        <HeroSection />
+
+        <section className="relative min-h-screen flex flex-col justify-center items-center pt-16 overflow-hidden">
+          <div className="container flex flex-col justify-center items-center flex-1">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              viewport={{ once: true }}
+              className="max-w-md mx-auto text-center mb-12"
+            >
+              <h2 className="text-3xl font-medium mb-4">How It Works</h2>
+              <p className="text-muted-foreground">
+                Our approach to making repository documentation more accessible and insightful.
+              </p>
+            </motion.div>
+            <HowItWorks />
+          </div>
+        </section>
+
+
+        <section className="py-20 bg-muted/30 flex flex-col justify-center items-center">
+          <div className="container flex flex-col justify-center items-center flex-1 px-4 md:px-6">
+            <motion.div
+              className="max-w-2xl mx-auto text-center"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-3xl font-medium mb-4">Ready to explore?</h2>
+              <p className="text-muted-foreground mb-8">
+                Enter any public repository and see its structure visualized with intelligent insights.
+              </p>
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <Button
+                  size="lg"
+                  onClick={() => router.push("/explorer")}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  Start Exploring
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="border-t border-muted py-8 px-4 md:px-6">
+        <div className="flex flex-col md:flex-row justify-between items-center w-full">
+          <div className="flex items-center space-x-2 mb-4 md:mb-0">
+            <Github className="h-5 w-5" />
+            <span className="font-medium">ParisLabs</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            © {new Date().getFullYear()} ParisLabs. All rights reserved.
+          </p>
+        </div>
+      </footer>
+    </div>
   );
-}
+};
+
+export default LandingPage;
