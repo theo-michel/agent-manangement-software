@@ -1,6 +1,8 @@
 from typing import Any, Dict, List, Optional, Literal
 import google.generativeai as genai
 from pydantic import BaseModel, Field
+from jinja2 import Environment, FileSystemLoader
+from pathlib import Path
 from app.services.llm_service.schema import LLMModel
 class Message(BaseModel):
     role: Literal["user", "assistant"]
@@ -18,6 +20,35 @@ class ChatResponse(BaseModel):
 class StructuredOutputRequest(BaseModel):
     prompt: str
     temperature: float = Field(default=0.7, ge=0.0, le=1.0)
+
+class TemplateManager:
+    """
+    Handles loading and rendering of Jinja2 templates.
+    """
+    def __init__(self, default_search_dir: Path):
+        # default_search_dir is the root from which template paths are resolved.
+        # e.g. if path is "prompts/file.jinja2", default_search_dir is script's dir.
+        self.default_search_dir = default_search_dir
+
+    def load_template(self, template_relative_path: str, context: dict = None) -> str:
+        """
+        Loads and renders a Jinja2 template.
+        template_relative_path is relative to the default_search_dir.
+        """
+        if context is None:
+            context = {}
+
+        full_template_path = self.default_search_dir / template_relative_path
+        
+        template_dir_for_loader = full_template_path.parent
+        template_file_name = full_template_path.name
+
+        if not full_template_path.exists():
+            raise FileNotFoundError(f"Template file not found: {full_template_path} (resolved from base {self.default_search_dir})")
+
+        env = Environment(loader=FileSystemLoader(searchpath=str(template_dir_for_loader)))
+        template = env.get_template(template_file_name)
+        return template.render(context)
 
 class GeminiService:
     def __init__(self, api_key: str):
