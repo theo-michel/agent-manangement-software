@@ -3,9 +3,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 import logging
 
-from app.models.repo_models import Repository, CodeUnit, RepoStatus
+from app.models.models import Repository, CodeUnit, RepoStatus
 from app.services.extract_github.schema import ChatRequest, ChatResponse
-from app.services.ai import AIService
+from app.services.ai.service import AIService
 from app.config import settings
 
 logger = logging.getLogger(__name__)

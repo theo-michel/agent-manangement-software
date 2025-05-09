@@ -4,7 +4,7 @@ import logging
 
 from app.database import get_async_session
 from app.services.extract_github.schema import DocsResponse, FileDescription
-from backend.app.services.docs.service import DocsService
+from app.services.docs.service import DocsService
 
 router = APIRouter(prefix="/docs", tags=["documentation"])
 

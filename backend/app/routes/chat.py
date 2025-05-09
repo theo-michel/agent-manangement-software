@@ -4,7 +4,7 @@ import logging
 
 from app.database import get_async_session
 from app.services.extract_github.schema import ChatRequest, ChatResponse
-from backend.app.services.chat.service import ChatService
+from app.services.chat.service import ChatService
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
