@@ -1,4 +1,4 @@
-from app.services.llm_service.service import GeminiService
+from fastapi_backend.app.services.llm_service.service import GeminiService
 
 
 
