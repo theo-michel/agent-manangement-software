@@ -35,14 +35,14 @@ class ClassifierConfig:
         # Initialize TemplateManager with the correct search directory
         self.template_manager = TemplateManager(default_search_dir=current_dir)
         self.prompts_config = {
-            "system_classification": self.template_manager.load_template("prompts/system_prompt_classification.jinja2"),
-            "user_classification": self.template_manager.load_template("prompts/user_prompt_classification.jinja2"),
-            "system_docstring": self.template_manager.load_template("prompts/prompt_docstrings/system_prompt_classification.jinja2"),
-            "user_docstring": self.template_manager.load_template("prompts/prompt_docstrings/user_prompt_classification.jinja2"),
-            "system_configuration": self.template_manager.load_template("prompts/prompt_configurations/system_prompt_configuration.jinja2"),
-            "user_configuration": self.template_manager.load_template("prompts/prompt_configurations/user_prompt_configuration.jinja2"),
-            "system_documentation": self.template_manager.load_template("prompts/prompt_documentations/system_prompt_documentation.jinja2"),
-            "user_documentation": self.template_manager.load_template("prompts/prompt_documentations/user_prompt_documentation.jinja2"),
+            "system_classification": self.template_manager.render_template("prompts/system_prompt_classification.jinja2"),
+            "user_classification": self.template_manager.render_template("prompts/user_prompt_classification.jinja2"),
+            "system_docstring": self.template_manager.render_template("prompts/prompt_docstrings/system_prompt_classification.jinja2"),
+            "user_docstring": self.template_manager.render_template("prompts/prompt_docstrings/user_prompt_classification.jinja2"),
+            "system_configuration": self.template_manager.render_template("prompts/prompt_configurations/system_prompt_configuration.jinja2"),
+            "user_configuration": self.template_manager.render_template("prompts/prompt_configurations/user_prompt_configuration.jinja2"),
+            "system_documentation": self.template_manager.render_template("prompts/prompt_documentations/system_prompt_documentation.jinja2"),
+            "user_documentation": self.template_manager.render_template("prompts/prompt_documentations/user_prompt_documentation.jinja2"),
         }
         self.file_class_model_0 = os.getenv("FILE_CLASSICATION_MODEL_0")
         self.file_class_model_1 = os.getenv("FILE_CLASSICATION_MODEL_1")
