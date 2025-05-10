@@ -1,18 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import update
-from typing import List, Dict, Any, Optional
+from typing import Optional
 import stripe
 from datetime import datetime
 import logging
 
 from app.database import get_async_session
 from app.config import settings
-from app.models.models import Repository, RepositoryFile, CodeUnit, RepoStatus
+from app.models.models import Repository, RepositoryFile, RepoStatus
 from app.services.extract_github.schema import (
     RepositoryStatusResponse,
-    IndexingRequest,
     CheckoutResponse,
     ChatRequest,
     ChatResponse,
@@ -93,11 +92,11 @@ async def get_repository_docs(
 
     if not repository:
         raise HTTPException(status_code=404, detail="Repository not found")
-    
+
     if repository.status != RepoStatus.INDEXED:
         raise HTTPException(
-            status_code=400, 
-            detail=f"Repository is not indexed. Current status: {repository.status.value}"
+            status_code=400,
+            detail=f"Repository is not indexed. Current status: {repository.status.value}",
         )
 
     # Get files with descriptions
@@ -145,21 +144,33 @@ async def chat_with_repository(
 
     if not repository:
         raise HTTPException(status_code=404, detail="Repository not found")
-    
+
     if repository.status != RepoStatus.INDEXED:
         raise HTTPException(
-            status_code=400, 
-            detail=f"Repository is not indexed. Current status: {repository.status.value}"
+            status_code=400,
+            detail=f"Repository is not indexed. Current status: {repository.status.value}",
         )
 
     # TODO: Implement chat functionality with vector database and LLM
     # This is a placeholder implementation
-    
+
     return ChatResponse(
         response=f"This is a placeholder response for the query: {chat_request.message}",
         code_snippets=[],
         source_files=[],
     )
+
+
+@router.get("/{owner}/{repo}/info")
+async def get_github_repo_info(owner: str, repo: str):
+    """
+    Get basic information about a GitHub repository.
+    """
+    try:
+        repo_info = await github_service.get_repository_info(owner, repo)
+        return repo_info
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 async def start_indexing_task(owner: str, repo: str, repository_id: int):
@@ -168,11 +179,11 @@ async def start_indexing_task(owner: str, repo: str, repository_id: int):
     """
     # This function would be implemented as a Celery task in a production environment
     # For now, it's a placeholder for the indexing process
-    
+
     # 1. Connect to database
     async_session = get_async_session()
     session = await anext(async_session)
-    
+
     try:
         # 2. Update repository status to PENDING if not already
         await session.execute(
@@ -181,18 +192,20 @@ async def start_indexing_task(owner: str, repo: str, repository_id: int):
             .values(status=RepoStatus.PENDING)
         )
         await session.commit()
-        
+
         # 3. Get file tree from GitHub
         file_tree = await github_service.get_file_tree(owner, repo)
-        
+
         # 4. Process each file
         for file_node in file_tree:
             if file_node.type == "file":
                 # Skip non-code files, binaries, etc.
                 if should_process_file(file_node.path):
                     # Get file content
-                    content = await github_service.get_file_content(owner, repo, file_node.path)
-                    
+                    content = await github_service.get_file_content(
+                        owner, repo, file_node.path
+                    )
+
                     # Create file in database
                     db_file = RepositoryFile(
                         repository_id=repository_id,
@@ -204,11 +217,11 @@ async def start_indexing_task(owner: str, repo: str, repository_id: int):
                     session.add(db_file)
                     await session.commit()
                     await session.refresh(db_file)
-                    
+
                     # TODO: Parse code into units (functions, classes, etc.)
                     # TODO: Generate descriptions for file and code units
                     # TODO: Generate embeddings and store in vector database
-        
+
         # 5. Update repository status to INDEXED
         await session.execute(
             update(Repository)
@@ -216,7 +229,7 @@ async def start_indexing_task(owner: str, repo: str, repository_id: int):
             .values(status=RepoStatus.INDEXED, indexed_at=datetime.utcnow())
         )
         await session.commit()
-        
+
     except Exception as e:
         # Update repository status to FAILED
         await session.execute(
@@ -236,13 +249,33 @@ def should_process_file(path: str) -> bool:
     """
     # Skip binary files, non-code files, etc.
     skip_extensions = [
-        ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".ico",
-        ".pdf", ".zip", ".tar", ".gz", ".rar",
-        ".mp3", ".mp4", ".wav", ".avi", ".mov",
-        ".woff", ".woff2", ".ttf", ".eot",
-        ".lock", ".bin", ".exe", ".dll",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".webp",
+        ".svg",
+        ".ico",
+        ".pdf",
+        ".zip",
+        ".tar",
+        ".gz",
+        ".rar",
+        ".mp3",
+        ".mp4",
+        ".wav",
+        ".avi",
+        ".mov",
+        ".woff",
+        ".woff2",
+        ".ttf",
+        ".eot",
+        ".lock",
+        ".bin",
+        ".exe",
+        ".dll",
     ]
-    
+
     # Skip certain directories
     skip_directories = [
         "node_modules/",
@@ -252,17 +285,17 @@ def should_process_file(path: str) -> bool:
         "build/",
         "vendor/",
     ]
-    
+
     # Check if path contains any skip directory
     for directory in skip_directories:
         if directory in path:
             return False
-    
+
     # Check file extension
     for ext in skip_extensions:
         if path.endswith(ext):
             return False
-    
+
     return True
 
 
@@ -295,9 +328,9 @@ def detect_language(path: str) -> Optional[str]:
         ".sh": "Shell",
         ".bash": "Bash",
     }
-    
+
     for ext, lang in language_map.items():
         if path.endswith(ext):
             return lang
-    
+
     return None
