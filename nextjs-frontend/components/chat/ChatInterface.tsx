@@ -78,7 +78,7 @@ export function ChatInterface() {
     console.log("Sending message:", inputMessage);
     console.log("Using model:", selectedModel.name);
 
-    router.push("/chatdetails");
+    router.push("/chat-details");
 
     setInputMessage("");
 
