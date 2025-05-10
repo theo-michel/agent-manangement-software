@@ -30,7 +30,7 @@ class TemplateManager:
         # e.g. if path is "prompts/file.jinja2", default_search_dir is script's dir.
         self.default_search_dir = default_search_dir
 
-    def load_template(self, template_relative_path: str, context: dict = None) -> str:
+    def render_template(self, template_relative_path: str, context: dict = None) -> str:
         """
         Loads and renders a Jinja2 template.
         template_relative_path is relative to the default_search_dir.
@@ -38,13 +38,13 @@ class TemplateManager:
         if context is None:
             context = {}
 
-        full_template_path = self.default_search_dir / template_relative_path
+        full_template_relative_path = self.default_search_dir / template_relative_path
         
-        template_dir_for_loader = full_template_path.parent
-        template_file_name = full_template_path.name
+        template_dir_for_loader = full_template_relative_path.parent
+        template_file_name = full_template_relative_path.name
 
-        if not full_template_path.exists():
-            raise FileNotFoundError(f"Template file not found: {full_template_path} (resolved from base {self.default_search_dir})")
+        if not full_template_relative_path.exists():
+            raise FileNotFoundError(f"Template file not found: {full_template_relative_path} (resolved from base {self.default_search_dir})")
 
         env = Environment(loader=FileSystemLoader(searchpath=str(template_dir_for_loader)))
         template = env.get_template(template_file_name)

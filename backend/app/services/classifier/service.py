@@ -1,10 +1,16 @@
+import os
+import sys
+
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(project_root)
+
 from backend.app.services.llm_service.service import TemplateManager
 from backend.app.services.classifier.schema import (
     create_file_classification,
     generate_code_structure_model_consize,
     DocumentCompression,
-    YamlBrief,
 )
+
 from backend.app.services.classifier.utils import list_all_files, SAFE
 import instructor
 import os
@@ -13,14 +19,21 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import concurrent.futures
 import google.generativeai as genai
+import logging
 import traceback
+from app.services.monitor.langfuse import get_langfuse_context,trace,generate_trace_id
+from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 dotenv.load_dotenv()
 
 
 class ClassifierConfig:
     def __init__(self):
-        self.template_manager = TemplateManager()
+        current_dir = Path(__file__).parent
+        # Initialize TemplateManager with the correct search directory
+        self.template_manager = TemplateManager(default_search_dir=current_dir)
         self.prompts_config = {
             "system_classification": self.template_manager.load_template("prompts/system_prompt_classification.jinja2"),
             "user_classification": self.template_manager.load_template("prompts/user_prompt_classification.jinja2"),
@@ -43,12 +56,13 @@ class ClassifierNode(ClassifierConfig):
         super().__init__()
 
     def process_batch(
-    file_batch: list[str],
-    client_gemini,
-    model_name,
-    symstem_prompt: str,
-    user_prompt: str,
-    scores: list[int],
+        self,
+        file_batch: list[str],
+        client_gemini,
+        model_name,
+        symstem_prompt: str,
+        user_prompt: str,
+        scores: list[int],
     span=None,
     ) -> dict:
         """Process a batch of files using Gemini API"""
@@ -104,7 +118,7 @@ class ClassifierNode(ClassifierConfig):
 
         return result
 
-    #@trace
+    @trace
     def llmclassifier(
         self,
         folder_path: str,
@@ -115,8 +129,7 @@ class ClassifierNode(ClassifierConfig):
         OPENAI_API_KEY: str = "",
         trace_id: str = ""
     ) -> str:
-        #span = get_langfuse_context().get("span")
-        span=None
+        span = get_langfuse_context().get("span")
 
         scores = [0]
 
@@ -216,6 +229,7 @@ class InformationCompressorNode(ClassifierConfig):
         super().__init__()
     
     def process_batch(
+        self,
         file_batch: str,
         client_gemini,
         model_name,
@@ -336,7 +350,7 @@ class InformationCompressorNode(ClassifierConfig):
             )
         return None, None
 
-    #@trace
+    @trace
     def summerizer(
         self,
         classified_files: dict,
@@ -347,8 +361,7 @@ class InformationCompressorNode(ClassifierConfig):
         OPENAI_API_KEY: str = "",
         trace_id: str = ""
     ) -> str:
-        #span = get_langfuse_context().get("span")
-        span=None
+        span = get_langfuse_context().get("span")
         scores = [0]
 
         # Configure safety settings
@@ -538,11 +551,37 @@ class ClassifierService:
         self.model = None
         self.classifier_node = ClassifierNode()
         self.information_compressor_node = InformationCompressorNode()
-    def run_pipeline(self, folder_path: str, batch_size: int = 50, max_workers: int = 10, GEMINI_API_KEY: str = "", ANTHROPIC_API_KEY: str = "", OPENAI_API_KEY: str = "", trace_id: str = ""):
+        self.trace_id = generate_trace_id()
+    def run_pipeline(self, folder_path: str, batch_size: int = 50, max_workers: int = 10, GEMINI_API_KEY: str = "", ANTHROPIC_API_KEY: str = "", OPENAI_API_KEY: str = ""):
         # Classifier Node
-        classifier_result = self.classifier_node.llmclassifier(folder_path, batch_size, max_workers, GEMINI_API_KEY, ANTHROPIC_API_KEY, OPENAI_API_KEY, trace_id)
-
+        # Classifier Node
+        classifier_result = self.classifier_node.llmclassifier(
+            folder_path, 
+            batch_size, 
+            max_workers, 
+            GEMINI_API_KEY, 
+            ANTHROPIC_API_KEY, 
+            OPENAI_API_KEY, 
+            trace_id=self.trace_id 
+        )
         # Information Compressor Node
-        information_compressor_result = self.information_compressor_node.summerizer(classifier_result, batch_size, max_workers, GEMINI_API_KEY, ANTHROPIC_API_KEY, OPENAI_API_KEY, trace_id)
-
+        information_compressor_result = self.information_compressor_node.summerizer(
+            classifier_result, 
+            batch_size, 
+            max_workers, 
+            GEMINI_API_KEY, 
+            ANTHROPIC_API_KEY, 
+            OPENAI_API_KEY, 
+            trace_id=self.trace_id  # Pass trace_id explicitly
+        )
         return information_compressor_result
+    
+
+
+
+
+# test
+if __name__ == "__main__":
+    classifier_service = ClassifierService()
+    result = classifier_service.run_pipeline("/Users/davidperso/projects/deepgithub/backend/app",GEMINI_API_KEY=os.getenv("GEMINI_API_KEY"))
+    print(result)
