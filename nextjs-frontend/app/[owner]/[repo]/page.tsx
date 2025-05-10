@@ -7,30 +7,43 @@ import { DocContent } from "@/components/docs/DocContent";
 import { ChatInterface } from "@/components/chat/ChatInterface";
 import { IndexationStatus } from "@/components/indexation/IndexationStatus";
 import { convertKBToMB, estimateIndexingPrice } from "@/lib/utils";
+import type { RepositoryInfo } from "@/app/openapi-client/types.gen";
+import { getRepositoryStatus, getRepositoryDocs, getGithubRepoInfo } from "@/app/openapi-client/sdk.gen";
+import type { RepositoryStatusResponse, DocsResponse } from "@/app/openapi-client/types.gen";
 
 export default function RepoDocsPage() {
     const { owner, repo } = useParams();
-    const [docData, setDocData] = useState(null);
+    const [docData, setDocData] = useState<DocsResponse | null>(null);
     const [isIndexed, setIsIndexed] = useState(false);
-    const [status, setStatus] = useState<any>(null);
-    const [repoInfo, setRepoInfo] = useState<any>(null);
+    const [status, setStatus] = useState<RepositoryStatusResponse | null>(null);
+    const [repoInfo, setRepoInfo] = useState<RepositoryInfo | null>(null);
 
     useEffect(() => {
-        fetch(`http://localhost:8000/repos/${owner}/${repo}/status`)
-            .then(res => res.json())
-            .then(data => {
-                setStatus(data);
-                setIsIndexed(data.status === "indexed");
-            });
+        getRepositoryStatus({
+            path: { owner: owner as string, repo: repo as string }
+        }).then(response => {
+            if ('data' in response && response.data) {
+                setStatus(response.data);
+                setIsIndexed(response.data.status === "indexed");
+            }
+        });
 
-        fetch(`http://localhost:8000/repos/${owner}/${repo}/info`)
-            .then(res => res.json())
-            .then(setRepoInfo);
+        getGithubRepoInfo({
+            path: { owner: owner as string, repo: repo as string }
+        }).then(response => {
+            if ('data' in response && response.data) {
+                setRepoInfo(response.data as RepositoryInfo);
+            }
+        });
 
         if (isIndexed) {
-            fetch(`http://localhost:8000/repos/${owner}/${repo}/docs`)
-                .then(res => res.json())
-                .then(setDocData);
+            getRepositoryDocs({
+                path: { owner: owner as string, repo: repo as string }
+            }).then(response => {
+                if ('data' in response && response.data) {
+                    setDocData(response.data);
+                }
+            });
         }
     }, [owner, repo, isIndexed]);
 

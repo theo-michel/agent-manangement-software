@@ -311,6 +311,17 @@ export type ChatWithRepositoryResponse = ChatResponse;
 
 export type ChatWithRepositoryError = HTTPValidationError;
 
+export type GetGithubRepoInfoData = {
+  path: {
+    owner: string;
+    repo: string;
+  };
+};
+
+export type GetGithubRepoInfoResponse = unknown;
+
+export type GetGithubRepoInfoError = HTTPValidationError;
+
 export type GetRepositoryDocs1Data = {
   path: {
     owner: string;

@@ -61,6 +61,9 @@ import type {
   ChatWithRepositoryData,
   ChatWithRepositoryError,
   ChatWithRepositoryResponse,
+  GetGithubRepoInfoData,
+  GetGithubRepoInfoError,
+  GetGithubRepoInfoResponse,
   GetRepositoryDocs1Data,
   GetRepositoryDocs1Error,
   GetRepositoryDocs1Response,
@@ -385,6 +388,23 @@ export const chatWithRepository = <ThrowOnError extends boolean = false>(
   >({
     ...options,
     url: "/repos/{owner}/{repo}/chat",
+  });
+};
+
+/**
+ * Get Github Repo Info
+ * Get basic information about a GitHub repository.
+ */
+export const getGithubRepoInfo = <ThrowOnError extends boolean = false>(
+  options: OptionsLegacyParser<GetGithubRepoInfoData, ThrowOnError>,
+) => {
+  return (options?.client ?? client).get<
+    GetGithubRepoInfoResponse,
+    GetGithubRepoInfoError,
+    ThrowOnError
+  >({
+    ...options,
+    url: "/repos/{owner}/{repo}/info",
   });
 };
 
