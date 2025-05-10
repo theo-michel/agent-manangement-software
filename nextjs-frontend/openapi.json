@@ -1013,6 +1013,56 @@
         }
       }
     },
+    "/repos/{owner}/{repo}/info": {
+      "get": {
+        "tags": [
+          "repository"
+        ],
+        "summary": "Get Github Repo Info",
+        "description": "Get basic information about a GitHub repository.",
+        "operationId": "get_github_repo_info",
+        "parameters": [
+          {
+            "name": "owner",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Owner"
+            }
+          },
+          {
+            "name": "repo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Repo"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/docs/{owner}/{repo}": {
       "get": {
         "tags": [
