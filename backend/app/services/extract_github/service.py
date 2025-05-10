@@ -4,16 +4,12 @@ from typing import Dict, List, Optional, Any, Tuple
 import httpx
 from github import Github, GithubException
 import logging
-from pydantic import BaseModel
+
+from app.services.extract_github.schema import FileNode, RepositoryInfo, RepositoryOwner
 
 logger = logging.getLogger(__name__)
 
-class FileNode(BaseModel):
-    path: str
-    type: str
-    content: Optional[str] = None
-    size: Optional[int] = None
-    
+
 class GitHubService:
     def __init__(self, github_token: str = None):
         self.github_token = github_token or os.environ.get("GITHUB_TOKEN")
@@ -23,27 +19,27 @@ class GitHubService:
             timeout=60.0,
         )
         
-    async def get_repository_info(self, owner: str, repo: str) -> Dict[str, Any]:
+    async def get_repository_info(self, owner: str, repo: str) -> RepositoryInfo:
         """Get basic repository information."""
         try:
             repo_obj = self.github_client.get_repo(f"{owner}/{repo}")
-            return {
-                "id": repo_obj.id,
-                "name": repo_obj.name,
-                "full_name": repo_obj.full_name,
-                "description": repo_obj.description,
-                "default_branch": repo_obj.default_branch,
-                "stars": repo_obj.stargazers_count,
-                "forks": repo_obj.forks_count,
-                "created_at": repo_obj.created_at.isoformat(),
-                "updated_at": repo_obj.updated_at.isoformat(),
-                "size": repo_obj.size,
-                "owner": {
-                    "login": repo_obj.owner.login,
-                    "id": repo_obj.owner.id,
-                    "avatar_url": repo_obj.owner.avatar_url,
-                }
-            }
+            return RepositoryInfo(
+                id=repo_obj.id,
+                name=repo_obj.name,
+                full_name=repo_obj.full_name,
+                description=repo_obj.description,
+                default_branch=repo_obj.default_branch,
+                stars=repo_obj.stargazers_count,
+                forks=repo_obj.forks_count,
+                created_at=repo_obj.created_at.isoformat(),
+                updated_at=repo_obj.updated_at.isoformat(),
+                size=repo_obj.size,
+                owner=RepositoryOwner(
+                    login=repo_obj.owner.login,
+                    id=repo_obj.owner.id,
+                    avatar_url=repo_obj.owner.avatar_url,
+                )
+            )
         except GithubException as e:
             logger.error(f"Error fetching repository info: {str(e)}")
             raise ValueError(f"Repository not found or access denied: {owner}/{repo}")

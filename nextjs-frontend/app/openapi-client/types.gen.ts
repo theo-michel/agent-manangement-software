@@ -102,9 +102,13 @@ export type RepositoryInfo = {
   created_at: string;
   updated_at: string;
   size: number;
-  owner: {
-    [key: string]: unknown;
-  };
+  owner: RepositoryOwner;
+};
+
+export type RepositoryOwner = {
+  login: string;
+  id: number;
+  avatar_url: string;
 };
 
 export type RepositoryStatusResponse = {
@@ -299,18 +303,6 @@ export type GetRepositoryDocsResponse = DocsResponse;
 
 export type GetRepositoryDocsError = HTTPValidationError;
 
-export type ChatWithRepositoryData = {
-  body: ChatRequest;
-  path: {
-    owner: string;
-    repo: string;
-  };
-};
-
-export type ChatWithRepositoryResponse = ChatResponse;
-
-export type ChatWithRepositoryError = HTTPValidationError;
-
 export type GetGithubRepoInfoData = {
   path: {
     owner: string;
@@ -318,20 +310,9 @@ export type GetGithubRepoInfoData = {
   };
 };
 
-export type GetGithubRepoInfoResponse = unknown;
+export type GetGithubRepoInfoResponse = RepositoryInfo;
 
 export type GetGithubRepoInfoError = HTTPValidationError;
-
-export type GetRepositoryDocs1Data = {
-  path: {
-    owner: string;
-    repo: string;
-  };
-};
-
-export type GetRepositoryDocs1Response = DocsResponse;
-
-export type GetRepositoryDocs1Error = HTTPValidationError;
 
 export type GetFileDocsData = {
   path: {
@@ -347,7 +328,7 @@ export type GetFileDocsResponse = FileDescription;
 
 export type GetFileDocsError = HTTPValidationError;
 
-export type ChatWithRepository1Data = {
+export type ChatWithRepositoryData = {
   body: ChatRequest;
   path: {
     owner: string;
@@ -355,6 +336,6 @@ export type ChatWithRepository1Data = {
   };
 };
 
-export type ChatWithRepository1Response = ChatResponse;
+export type ChatWithRepositoryResponse = ChatResponse;
 
-export type ChatWithRepository1Error = HTTPValidationError;
+export type ChatWithRepositoryError = HTTPValidationError;

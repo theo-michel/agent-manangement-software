@@ -11,6 +11,7 @@ from app.database import get_async_session
 from app.config import settings
 from app.models.models import Repository, RepositoryFile, RepoStatus
 from app.services.extract_github.schema import (
+    RepositoryInfo,
     RepositoryStatusResponse,
     CheckoutResponse,
     ChatRequest,
@@ -126,51 +127,14 @@ async def get_repository_docs(
     )
 
 
-@router.post("/{owner}/{repo}/chat", response_model=ChatResponse)
-async def chat_with_repository(
-    owner: str,
-    repo: str,
-    chat_request: ChatRequest,
-    session: AsyncSession = Depends(get_async_session),
-):
-    """
-    Chat with a repository.
-    """
-    # Check if repository exists and is indexed
-    result = await session.execute(
-        select(Repository).where(Repository.full_name == f"{owner}/{repo}")
-    )
-    repository = result.scalars().first()
 
-    if not repository:
-        raise HTTPException(status_code=404, detail="Repository not found")
-
-    if repository.status != RepoStatus.INDEXED:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Repository is not indexed. Current status: {repository.status.value}",
-        )
-
-    # TODO: Implement chat functionality with vector database and LLM
-    # This is a placeholder implementation
-
-    return ChatResponse(
-        response=f"This is a placeholder response for the query: {chat_request.message}",
-        code_snippets=[],
-        source_files=[],
-    )
-
-
-@router.get("/{owner}/{repo}/info")
+@router.get("/{owner}/{repo}/info", response_model=RepositoryInfo)
 async def get_github_repo_info(owner: str, repo: str):
     """
     Get basic information about a GitHub repository.
     """
-    try:
-        repo_info = await github_service.get_repository_info(owner, repo)
-        return repo_info
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    repo_info = await github_service.get_repository_info(owner, repo)
+    return repo_info
 
 
 async def start_indexing_task(owner: str, repo: str, repository_id: int):

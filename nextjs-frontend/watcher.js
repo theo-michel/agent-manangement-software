@@ -1,11 +1,15 @@
 const chokidar = require("chokidar");
 const { exec } = require("node:child_process");
+const { config } = require("dotenv");
 
+config({ path: ".env.local" });
+
+const openapiFile = process.env.OPENAPI_OUTPUT_FILE;
 
 // Watch the specific file for changes
-chokidar.watch("openapi.json").on("change", (path) => {
+chokidar.watch(openapiFile).on("change", (path) => {
   console.log(`File ${path} has been modified. Running generate-client...`);
-  exec("pnpm run generate-client --input openapi.json", (error, stdout, stderr) => {
+  exec("npm run generate-client", (error, stdout, stderr) => {
     if (error) {
       console.error(`Error: ${error.message}`);
       return;

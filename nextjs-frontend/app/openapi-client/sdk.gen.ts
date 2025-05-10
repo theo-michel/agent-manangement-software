@@ -58,21 +58,15 @@ import type {
   GetRepositoryDocsData,
   GetRepositoryDocsError,
   GetRepositoryDocsResponse,
-  ChatWithRepositoryData,
-  ChatWithRepositoryError,
-  ChatWithRepositoryResponse,
   GetGithubRepoInfoData,
   GetGithubRepoInfoError,
   GetGithubRepoInfoResponse,
-  GetRepositoryDocs1Data,
-  GetRepositoryDocs1Error,
-  GetRepositoryDocs1Response,
   GetFileDocsData,
   GetFileDocsError,
   GetFileDocsResponse,
-  ChatWithRepository1Data,
-  ChatWithRepository1Error,
-  ChatWithRepository1Response,
+  ChatWithRepositoryData,
+  ChatWithRepositoryError,
+  ChatWithRepositoryResponse,
 } from "./types.gen";
 
 export const client = createClient(createConfig());
@@ -375,23 +369,6 @@ export const getRepositoryDocs = <ThrowOnError extends boolean = false>(
 };
 
 /**
- * Chat With Repository
- * Chat with a repository.
- */
-export const chatWithRepository = <ThrowOnError extends boolean = false>(
-  options: OptionsLegacyParser<ChatWithRepositoryData, ThrowOnError>,
-) => {
-  return (options?.client ?? client).post<
-    ChatWithRepositoryResponse,
-    ChatWithRepositoryError,
-    ThrowOnError
-  >({
-    ...options,
-    url: "/repos/{owner}/{repo}/chat",
-  });
-};
-
-/**
  * Get Github Repo Info
  * Get basic information about a GitHub repository.
  */
@@ -405,23 +382,6 @@ export const getGithubRepoInfo = <ThrowOnError extends boolean = false>(
   >({
     ...options,
     url: "/repos/{owner}/{repo}/info",
-  });
-};
-
-/**
- * Get Repository Docs
- * Get documentation for a repository.
- */
-export const getRepositoryDocs1 = <ThrowOnError extends boolean = false>(
-  options: OptionsLegacyParser<GetRepositoryDocs1Data, ThrowOnError>,
-) => {
-  return (options?.client ?? client).get<
-    GetRepositoryDocs1Response,
-    GetRepositoryDocs1Error,
-    ThrowOnError
-  >({
-    ...options,
-    url: "/docs/{owner}/{repo}",
   });
 };
 
@@ -446,12 +406,12 @@ export const getFileDocs = <ThrowOnError extends boolean = false>(
  * Chat With Repository
  * Chat with a repository using AI-powered understanding of the codebase.
  */
-export const chatWithRepository1 = <ThrowOnError extends boolean = false>(
-  options: OptionsLegacyParser<ChatWithRepository1Data, ThrowOnError>,
+export const chatWithRepository = <ThrowOnError extends boolean = false>(
+  options: OptionsLegacyParser<ChatWithRepositoryData, ThrowOnError>,
 ) => {
   return (options?.client ?? client).post<
-    ChatWithRepository1Response,
-    ChatWithRepository1Error,
+    ChatWithRepositoryResponse,
+    ChatWithRepositoryError,
     ThrowOnError
   >({
     ...options,

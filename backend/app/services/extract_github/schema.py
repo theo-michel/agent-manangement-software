@@ -10,6 +10,12 @@ class RepoStatus(str, Enum):
     FAILED = "failed"
 
 
+class RepositoryOwner(BaseModel):
+    login: str
+    id: int
+    avatar_url: str
+
+
 class RepositoryInfo(BaseModel):
     id: int
     name: str
@@ -21,7 +27,7 @@ class RepositoryInfo(BaseModel):
     created_at: str
     updated_at: str
     size: int
-    owner: Dict[str, Any]
+    owner: RepositoryOwner
 
 
 class FileNode(BaseModel):

@@ -951,68 +951,6 @@
         }
       }
     },
-    "/repos/{owner}/{repo}/chat": {
-      "post": {
-        "tags": [
-          "repository"
-        ],
-        "summary": "Chat With Repository",
-        "description": "Chat with a repository.",
-        "operationId": "chat_with_repository",
-        "parameters": [
-          {
-            "name": "owner",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Owner"
-            }
-          },
-          {
-            "name": "repo",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Repo"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChatRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ChatResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/repos/{owner}/{repo}/info": {
       "get": {
         "tags": [
@@ -1046,58 +984,8 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/docs/{owner}/{repo}": {
-      "get": {
-        "tags": [
-          "documentation"
-        ],
-        "summary": "Get Repository Docs",
-        "description": "Get documentation for a repository.",
-        "operationId": "get_repository_docs",
-        "parameters": [
-          {
-            "name": "owner",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Owner"
-            }
-          },
-          {
-            "name": "repo",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Repo"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DocsResponse"
+                  "$ref": "#/components/schemas/RepositoryInfo"
                 }
               }
             }
@@ -1628,8 +1516,7 @@
             "title": "Size"
           },
           "owner": {
-            "type": "object",
-            "title": "Owner"
+            "$ref": "#/components/schemas/RepositoryOwner"
           }
         },
         "type": "object",
@@ -1646,6 +1533,29 @@
           "owner"
         ],
         "title": "RepositoryInfo"
+      },
+      "RepositoryOwner": {
+        "properties": {
+          "login": {
+            "type": "string",
+            "title": "Login"
+          },
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "avatar_url": {
+            "type": "string",
+            "title": "Avatar Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "login",
+          "id",
+          "avatar_url"
+        ],
+        "title": "RepositoryOwner"
       },
       "RepositoryStatusResponse": {
         "properties": {

@@ -14,19 +14,6 @@ logger = logging.getLogger(__name__)
 docs_service = DocsService()
 
 
-@router.get("/{owner}/{repo}", response_model=DocsResponse)
-async def get_repository_docs(
-    owner: str, repo: str, session: AsyncSession = Depends(get_async_session)
-):
-    """ 
-    Get documentation for a repository.
-    """
-    try:
-        return await docs_service.get_repository_docs(owner, repo, session)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
 @router.get("/{owner}/{repo}/file", response_model=FileDescription)
 async def get_file_docs(
     owner: str, repo: str, path: str, session: AsyncSession = Depends(get_async_session)
