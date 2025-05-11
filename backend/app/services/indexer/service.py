@@ -19,8 +19,8 @@ import logging
 from app.services.monitor.langfuse import get_langfuse_context,trace,generate_trace_id
 from pathlib import Path
 
-from backend.app.services.chat.service import ChatService
-from backend.app.services.github.service import GithubService
+from app.services.chat.service import ChatService
+from app.services.github.service import GithubService
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.append(project_root)
 
@@ -611,7 +611,7 @@ class IndexerService:
             # Get the documentation json from the fastapi documentation generation server
             logger.info(f"Calling classifier service for {repo_path} with GEMINI_API_KEY: {gemini_api_key[0:5]}")
             try:
-                response = self.indexer_service.run_pipeline(folder_path=repo_path, GEMINI_API_KEY=gemini_api_key) # Use repo_path directly
+                response = self.run_pipeline(folder_path=repo_path, GEMINI_API_KEY=gemini_api_key) # Use repo_path directly
             except Exception as e:
                 raise Exception(f"Failed to get documentation from the server: {e},{traceback.format_exc()}")
 
@@ -638,9 +638,6 @@ class IndexerService:
 
 # test
 if __name__ == "__main__":
-    classifier_service = IndexerService()
-    result = classifier_service.run_pipeline("/Users/davidperso/projects/deepgithub/backend/app",GEMINI_API_KEY=os.getenv("GEMINI_API_KEY"))
-    print(result)
     
     
     service = IndexerService()
