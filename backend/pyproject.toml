@@ -44,6 +44,9 @@ include = ["commands"]
 [tool.hatch.build.targets.wheel]
 include = ["commands"]
 
+[tool.ruff]
+src = ["backend"]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

@@ -1,10 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import update
-from typing import Optional
 import stripe
-from datetime import datetime
+
 import logging
 
 from app.database import get_async_session
@@ -14,13 +12,12 @@ from app.services.extract_github.schema import (
     RepositoryInfo,
     RepositoryStatusResponse,
     CheckoutResponse,
-    ChatRequest,
-    ChatResponse,
     DocsResponse,
     FileDescription,
 )
-from app.services.extract_github.service import GitHubService
+from app.services.indexer.service import IndexerService
 from app.services.github.service import GithubService
+
 
 router = APIRouter(prefix="/repos", tags=["repository"])
 logger = logging.getLogger(__name__)
@@ -30,11 +27,8 @@ if settings.STRIPE_API_KEY:
     stripe.api_key = settings.STRIPE_API_KEY
 
 # Initialize GitHub service
-github_service = GitHubService(settings.GITHUB_TOKEN)
-
-# Initialize service
-repository_service = GithubService()
-
+github_service = GithubService()
+indexer_service = IndexerService()
 
 @router.get("/{owner}/{repo}/status", response_model=RepositoryStatusResponse)
 async def get_repository_status(
@@ -44,7 +38,7 @@ async def get_repository_status(
     Check the indexing status of a repository.
     """
     try:
-        return await repository_service.get_repository_status(owner, repo, session)
+        return await github_service.get_repository_status(owner, repo, session)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -53,28 +47,15 @@ async def get_repository_status(
 async def index_repository(
     owner: str,
     repo: str,
-    session: AsyncSession = Depends(get_async_session),
 ):
     """
     Start the indexing process for a repository.
     Creates a Stripe checkout session for payment.
     """
     try:
-        return await repository_service.start_indexing(owner, repo, session)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.post("/webhook", include_in_schema=False)
-async def stripe_webhook(
-    request: Request, session: AsyncSession = Depends(get_async_session)
-):
-    """
-    Webhook for handling Stripe payment events.
-    """
-    try:
-        return await repository_service.process_webhook(request, session)
-    except ValueError as e:
+        cache_name =  await indexer_service.insert_index_and_cache(f"https://github.com/{owner}/{repo}") # TODO make this into owner and repo
+        return CheckoutResponse(cache_name=cache_name)
+    except ValueError as e: 
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -135,166 +116,3 @@ async def get_github_repo_info(owner: str, repo: str):
     """
     repo_info = await github_service.get_repository_info(owner, repo)
     return repo_info
-
-
-async def start_indexing_task(owner: str, repo: str, repository_id: int):
-    """
-    Background task to index a repository.
-    """
-    # This function would be implemented as a Celery task in a production environment
-    # For now, it's a placeholder for the indexing process
-
-    # 1. Connect to database
-    async_session = get_async_session()
-    session = await anext(async_session)
-
-    try:
-        # 2. Update repository status to PENDING if not already
-        await session.execute(
-            update(Repository)
-            .where(Repository.id == repository_id)
-            .values(status=RepoStatus.PENDING)
-        )
-        await session.commit()
-
-        # 3. Get file tree from GitHub
-        file_tree = await github_service.get_file_tree(owner, repo)
-
-        # 4. Process each file
-        for file_node in file_tree:
-            if file_node.type == "file":
-                # Skip non-code files, binaries, etc.
-                if should_process_file(file_node.path):
-                    # Get file content
-                    content = await github_service.get_file_content(
-                        owner, repo, file_node.path
-                    )
-
-                    # Create file in database
-                    db_file = RepositoryFile(
-                        repository_id=repository_id,
-                        path=file_node.path,
-                        type="file",
-                        size=file_node.size,
-                        language=detect_language(file_node.path),
-                    )
-                    session.add(db_file)
-                    await session.commit()
-                    await session.refresh(db_file)
-
-                    # TODO: Parse code into units (functions, classes, etc.)
-                    # TODO: Generate descriptions for file and code units
-                    # TODO: Generate embeddings and store in vector database
-
-        # 5. Update repository status to INDEXED
-        await session.execute(
-            update(Repository)
-            .where(Repository.id == repository_id)
-            .values(status=RepoStatus.INDEXED, indexed_at=datetime.utcnow())
-        )
-        await session.commit()
-
-    except Exception as e:
-        # Update repository status to FAILED
-        await session.execute(
-            update(Repository)
-            .where(Repository.id == repository_id)
-            .values(status=RepoStatus.FAILED)
-        )
-        await session.commit()
-        raise e
-    finally:
-        await session.close()
-
-
-def should_process_file(path: str) -> bool:
-    """
-    Determine if a file should be processed based on its path.
-    """
-    # Skip binary files, non-code files, etc.
-    skip_extensions = [
-        ".png",
-        ".jpg",
-        ".jpeg",
-        ".gif",
-        ".webp",
-        ".svg",
-        ".ico",
-        ".pdf",
-        ".zip",
-        ".tar",
-        ".gz",
-        ".rar",
-        ".mp3",
-        ".mp4",
-        ".wav",
-        ".avi",
-        ".mov",
-        ".woff",
-        ".woff2",
-        ".ttf",
-        ".eot",
-        ".lock",
-        ".bin",
-        ".exe",
-        ".dll",
-    ]
-
-    # Skip certain directories
-    skip_directories = [
-        "node_modules/",
-        ".git/",
-        "__pycache__/",
-        "dist/",
-        "build/",
-        "vendor/",
-    ]
-
-    # Check if path contains any skip directory
-    for directory in skip_directories:
-        if directory in path:
-            return False
-
-    # Check file extension
-    for ext in skip_extensions:
-        if path.endswith(ext):
-            return False
-
-    return True
-
-
-def detect_language(path: str) -> Optional[str]:
-    """
-    Detect the programming language based on file extension.
-    """
-    language_map = {
-        ".py": "Python",
-        ".js": "JavaScript",
-        ".ts": "TypeScript",
-        ".jsx": "React",
-        ".tsx": "React TypeScript",
-        ".java": "Java",
-        ".c": "C",
-        ".cpp": "C++",
-        ".cs": "C#",
-        ".go": "Go",
-        ".rs": "Rust",
-        ".rb": "Ruby",
-        ".php": "PHP",
-        ".html": "HTML",
-        ".css": "CSS",
-        ".scss": "SCSS",
-        ".md": "Markdown",
-        ".json": "JSON",
-        ".yaml": "YAML",
-        ".yml": "YAML",
-        ".toml": "TOML",
-        ".sh": "Shell",
-        ".bash": "Bash",
-    }
-
-    for ext, lang in language_map.items():
-        if path.endswith(ext):
-            return lang
-
-    return None

@@ -51,7 +51,7 @@ class IndexingRequest(BaseModel):
 
 
 class CheckoutResponse(BaseModel):
-    checkout_url: str
+    cache_name: str
 
 
 class ChatRequest(BaseModel):

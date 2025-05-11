@@ -5,7 +5,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from .utils import simple_generate_unique_route_id
 from app.routes.items import router as items_router
 from app.routes.extract_github import router as github_router
-from app.routes.docs import router as docs_router
 from app.routes.chat import router as chat_router
 from app.config import settings
 
@@ -55,5 +54,4 @@ app.include_router(items_router, prefix="/items")
 
 # Include GitHub-related routes
 app.include_router(github_router)
-app.include_router(docs_router)
 app.include_router(chat_router)

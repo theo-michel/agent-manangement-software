@@ -40,7 +40,7 @@ export type ChatResponse = {
 };
 
 export type CheckoutResponse = {
-  checkout_url: string;
+  cache_name: string;
 };
 
 export type DocsResponse = {
@@ -313,20 +313,6 @@ export type GetGithubRepoInfoData = {
 export type GetGithubRepoInfoResponse = RepositoryInfo;
 
 export type GetGithubRepoInfoError = HTTPValidationError;
-
-export type GetFileDocsData = {
-  path: {
-    owner: string;
-    repo: string;
-  };
-  query: {
-    path: string;
-  };
-};
-
-export type GetFileDocsResponse = FileDescription;
-
-export type GetFileDocsError = HTTPValidationError;
 
 export type ChatWithRepositoryData = {
   body: ChatRequest;

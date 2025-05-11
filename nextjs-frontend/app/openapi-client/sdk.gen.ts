@@ -61,9 +61,6 @@ import type {
   GetGithubRepoInfoData,
   GetGithubRepoInfoError,
   GetGithubRepoInfoResponse,
-  GetFileDocsData,
-  GetFileDocsError,
-  GetFileDocsResponse,
   ChatWithRepositoryData,
   ChatWithRepositoryError,
   ChatWithRepositoryResponse,
@@ -382,23 +379,6 @@ export const getGithubRepoInfo = <ThrowOnError extends boolean = false>(
   >({
     ...options,
     url: "/repos/{owner}/{repo}/info",
-  });
-};
-
-/**
- * Get File Docs
- * Get documentation for a specific file in a repository.
- */
-export const getFileDocs = <ThrowOnError extends boolean = false>(
-  options: OptionsLegacyParser<GetFileDocsData, ThrowOnError>,
-) => {
-  return (options?.client ?? client).get<
-    GetFileDocsResponse,
-    GetFileDocsError,
-    ThrowOnError
-  >({
-    ...options,
-    url: "/docs/{owner}/{repo}/file",
   });
 };
 

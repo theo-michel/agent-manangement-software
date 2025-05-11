@@ -5,26 +5,27 @@ from sqlalchemy.future import select
 from sqlalchemy import update
 import stripe
 import logging
-import json
-from fastapi import Request
+
 
 from app.services.extract_github.service import GitHubService
 from app.services.extract_github.schema import (
     RepositoryStatusResponse, 
-    CheckoutResponse,
+
     RepoStatus as SchemaRepoStatus
 )
-from app.models.models import Repository, RepositoryFile, RepoStatus
 from app.config import settings
 import subprocess
 from pathlib import Path
 from urllib.parse import urlparse
 
+from app.db.github_data_service import GithubDataService
+
 logger = logging.getLogger(__name__)
 
 class GithubService:
-    def __init__(self, github_service: GitHubService = None):
-        self.github_service = github_service or GitHubService(settings.GITHUB_TOKEN)
+    def __init__(self):
+        self.github_service = GitHubService(settings.GITHUB_TOKEN)
+        self.github_data_service = GithubDataService()
         if settings.STRIPE_API_KEY:
             stripe.api_key = settings.STRIPE_API_KEY
 
@@ -101,3 +102,24 @@ class GithubService:
         except Exception as e:
             logger.error(f"Unexpected error: {e}")
             return None
+
+    async def get_repository_status(
+        self, owner: str, repo: str, session: AsyncSession
+    ) -> RepositoryStatusResponse:
+        """
+        Get the status of a repository.
+        """
+        repository_status = await self.github_data_service.get_repository_status(owner=owner, repo=repo, session=session)
+        if repository_status.status != SchemaRepoStatus.NOT_INDEXED:
+            return repository_status
+
+        try:
+            file_count = await self.github_service.count_files(owner, repo)
+            return RepositoryStatusResponse(
+                status=SchemaRepoStatus.NOT_INDEXED,
+                file_count=file_count,
+                message="Repository not indexed yet",
+            )
+        except ValueError as e:
+            logger.error(f"Error getting file count: {str(e)}")
+            raise ValueError(f"Repository not found or access denied: {owner}/{repo}")

@@ -585,7 +585,11 @@ class IndexerService:
             trace_id=self.trace_id  # Pass trace_id explicitly
         )
         return information_compressor_result
-    def insert_index_and_cache(self, link: str, gemini_api_key=None):
+    def insert_index_and_cache(self, link: str, gemini_api_key=None)->str:
+        
+        if gemini_api_key is None:
+            gemini_api_key = os.getenv("GEMINI_API_KEY")
+    
         display_name = link.split("/")[-1]
         documentation_path = f"docstrings_json/{display_name}.json"
         documentation_md_path = f"ducomentations_json/{display_name}.json"
@@ -609,7 +613,7 @@ class IndexerService:
                 documentation_json = json.load(f)
         else:
             # Get the documentation json from the fastapi documentation generation server
-            logger.info(f"Calling classifier service for {repo_path} with GEMINI_API_KEY: {gemini_api_key[0:5]}")
+            logger.info(f"Calling indexer service for {repo_path} with GEMINI_API_KEY: {gemini_api_key[0:5]}")
             try:
                 response = self.run_pipeline(folder_path=repo_path, GEMINI_API_KEY=gemini_api_key) # Use repo_path directly
             except Exception as e:

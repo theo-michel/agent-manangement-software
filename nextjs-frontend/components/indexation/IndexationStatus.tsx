@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Info, Lock, Clock } from "lucide-react";
 import { toast } from "sonner";
+import {indexRepository} from '@/app/openapi-client/sdk.gen';
 
 interface IndexationStatusProps {
   repoName: string;
@@ -61,7 +62,19 @@ export function IndexationStatus({
 
       toast.success("Payment successful!");
       setIsRedirectingToStripe(false);
+
+
       setIsIndexing(true);
+
+      const response = await indexRepository({
+        path: {
+          owner: repoName.split("/")[0],
+          repo: repoName.split("/")[1],
+        },
+      });
+      console.log("response from indexRepository");
+      console.log(response);
+
     } catch (error) {
       setIsRedirectingToStripe(false);
       toast.error("Payment failed. Please try again.");
