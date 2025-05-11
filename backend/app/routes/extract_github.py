@@ -20,7 +20,7 @@ from app.services.extract_github.schema import (
     FileDescription,
 )
 from app.services.extract_github.service import GitHubService
-from app.services.github_repository.service import GithubRepositoryService
+from app.services.github.service import GithubService
 
 router = APIRouter(prefix="/repos", tags=["repository"])
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ if settings.STRIPE_API_KEY:
 github_service = GitHubService(settings.GITHUB_TOKEN)
 
 # Initialize service
-repository_service = GithubRepositoryService()
+repository_service = GithubService()
 
 
 @router.get("/{owner}/{repo}/status", response_model=RepositoryStatusResponse)

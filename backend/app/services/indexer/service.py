@@ -1,28 +1,30 @@
+import json
 import os
 import sys
-
-project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-sys.path.append(project_root)
-
-from backend.app.services.llm_service.service import TemplateManager
-from backend.app.services.classifier.schema import (
+from app.services.llm_service.service import TemplateManager
+from app.services.indexer.schema import (
     create_file_classification,
     generate_code_structure_model_consize,
     DocumentCompression,
 )
 
-from backend.app.services.classifier.utils import list_all_files, SAFE
+from app.services.indexer.utils import create_cache, list_all_files, SAFE
 import instructor
-import os
 import dotenv
 import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import concurrent.futures
 import google.generativeai as genai
 import logging
-import traceback
 from app.services.monitor.langfuse import get_langfuse_context,trace,generate_trace_id
 from pathlib import Path
+
+from backend.app.services.chat.service import ChatService
+from backend.app.services.github.service import GithubService
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(project_root)
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -349,9 +351,8 @@ class InformationCompressorNode(ClassifierConfig):
                 level="ERROR",
             )
         return None, None
-
     @trace
-    def summerizer(
+    def summarizer(
         self,
         classified_files: dict,
         batch_size: int = 50,  # Number of files to process in each batch
@@ -546,14 +547,23 @@ class InformationCompressorNode(ClassifierConfig):
         }
 
 
-class ClassifierService:
+class IndexerService:
     def __init__(self):
         self.model = None
         self.classifier_node = ClassifierNode()
         self.information_compressor_node = InformationCompressorNode()
         self.trace_id = generate_trace_id()
+        self.github_service = GithubService()
+        #create docstrings_json folder if it doesn't exist
+        if not os.path.exists("docstrings_json"):
+            os.makedirs("docstrings_json")
+        #create ducomentations_json folder if it doesn't exist
+        if not os.path.exists("ducomentations_json"):
+            os.makedirs("ducomentations_json")
+        #create configs_json folder if it doesn't exist
+        if not os.path.exists("configs_json"):
+            os.makedirs("configs_json")
     def run_pipeline(self, folder_path: str, batch_size: int = 50, max_workers: int = 10, GEMINI_API_KEY: str = "", ANTHROPIC_API_KEY: str = "", OPENAI_API_KEY: str = ""):
-        # Classifier Node
         # Classifier Node
         classifier_result = self.classifier_node.llmclassifier(
             folder_path, 
@@ -565,7 +575,7 @@ class ClassifierService:
             trace_id=self.trace_id 
         )
         # Information Compressor Node
-        information_compressor_result = self.information_compressor_node.summerizer(
+        information_compressor_result = self.information_compressor_node.summarizer(
             classifier_result, 
             batch_size, 
             max_workers, 
@@ -575,13 +585,95 @@ class ClassifierService:
             trace_id=self.trace_id  # Pass trace_id explicitly
         )
         return information_compressor_result
-    
+    def insert_index_and_cache(self, link: str, gemini_api_key=None):
+        display_name = link.split("/")[-1]
+        documentation_path = f"docstrings_json/{display_name}.json"
+        documentation_md_path = f"ducomentations_json/{display_name}.json"
+        config_path = f"configs_json/{display_name}.json"
+        repo_path = self.github_service.clone_github_repo("repository_folder", link)
+
+        system_prompt = """
+    # Context
+    You are an expert Software developer with a deep understanding of the software development lifecycle, including requirements gathering, design, implementation, testing, and deployment.
+    Your task is to answer any question related to the documentation of the python repository repository_name that you have in your context.
 
 
+    """.replace(
+            "repository_name", display_name
+        )
 
+        # Check if documentation file already exists
+        if os.path.exists(documentation_path):
+            # Load existing documentation
+            with open(documentation_path, "r") as f:
+                documentation_json = json.load(f)
+        else:
+            # Get the documentation json from the fastapi documentation generation server
+            logger.info(f"Calling classifier service for {repo_path} with GEMINI_API_KEY: {gemini_api_key[0:5]}")
+            try:
+                response = self.indexer_service.run_pipeline(folder_path=repo_path, GEMINI_API_KEY=gemini_api_key) # Use repo_path directly
+            except Exception as e:
+                raise Exception(f"Failed to get documentation from the server: {e},{traceback.format_exc()}")
+
+            documentation_json = {"documentation": response["documentation"]}
+            documentation_md_json = {"documentation_md": response["documentation_md"]}
+            config_json = {"config": response["config"]}
+
+            logger.info("Loaded existing documentation_json\n Loaded existing config\n Loaded existing documentation_md")
+
+            # Save the documentation_json to a file
+            with open(documentation_path, "w") as f1:
+                json.dump(documentation_json, f1, indent=4)
+            # Save the config_json to a file
+            with open(documentation_md_path, "w") as f2:
+                json.dump(documentation_md_json, f2, indent=4)
+            # Save the config_json to a file
+            with open(config_path, "w") as f3:
+                json.dump(config_json, f3, indent=4)
+
+        documentation_str = str(documentation_json)
+        cache_name = create_cache(display_name, documentation_str, system_prompt, gemini_api_key)
+
+        return cache_name
 
 # test
 if __name__ == "__main__":
-    classifier_service = ClassifierService()
+    classifier_service = IndexerService()
     result = classifier_service.run_pipeline("/Users/davidperso/projects/deepgithub/backend/app",GEMINI_API_KEY=os.getenv("GEMINI_API_KEY"))
     print(result)
+    
+    
+    service = IndexerService()
+    chat = ChatService()
+    cache_name = service.insert_index_and_cache("https://github.com/julien-blanchon/arxflix", os.getenv("GEMINI_API_KEY"))
+
+    repository_name_test = "arxflix"
+    user_problem_test = "Present this repository in a way that is easy to understand"
+
+    # This is the main "documentation" input, typically representing code files.
+    documentation_input_test = None
+    with open(f"docstrings_json/{repository_name_test}.json", "r") as f:
+        documentation_input_test = json.load(f)
+
+    # This represents Markdown documentation files.
+    documentation_md_input_test = None
+    with open(f"ducomentations_json/{repository_name_test}.json", "r") as f:
+        documentation_md_input_test = json.load(f)
+
+    # This represents configuration files (e.g., JSON, YAML).
+    config_input_test = None
+    with open(f"configs_json/{repository_name_test}.json", "r") as f:
+        config_input_test = json.load(f)
+
+    answer = chat.run_pipeline(
+            repository_name=repository_name_test,
+            cache_id=cache_name,
+            documentation=documentation_input_test,
+            user_problem=user_problem_test,
+            documentation_md=documentation_md_input_test,
+            config_input=config_input_test,
+            GEMINI_API_KEY=os.getenv("GEMINI_API_KEY")  # Pass the API key here
+        )
+    
+    print(answer)
+    

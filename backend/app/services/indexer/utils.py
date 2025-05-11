@@ -1,9 +1,32 @@
 import os
-import ast
 from typing import List, Dict
-import uuid
 
-import os
+#TODO PUT THIS IN THE MODEL SERVICE
+import dotenv
+import google.generativeai as genai
+from google.generativeai import caching
+import google.api_core.exceptions as exceptions
+import datetime
+import time
+import logging
+import sys
+
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(project_root)
+
+dotenv.load_dotenv()
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+CONTEXT_CACHING_RETRIVER = os.getenv("CONTEXT_CACHING_RETRIVER")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+# Default configuration with environment variable
+genai.configure(api_key=GEMINI_API_KEY)
+
+
+
 
 SAFE = [
             {"category": "HARM_CATEGORY_DANGEROUS", "threshold": "BLOCK_NONE"},
@@ -260,3 +283,65 @@ def list_all_files(folder_path: str, include_md: bool) -> Dict[str, List[str]]:
 
     except Exception as e:
         raise Exception(f"Error while processing files: {str(e)}")
+
+
+
+
+# Function to configure API with a specific key
+def configure_gemini_api(api_key=None):
+    """Configure Gemini API with a specific key or use the environment variable"""
+    if api_key:
+        genai.configure(api_key=api_key)
+    else:
+        genai.configure(api_key=GEMINI_API_KEY)
+
+def create_cache(display_name: str, documentation: str, system_prompt: str, gemini_api_key=None):
+    # Configure Gemini API with the provided key or use the default
+    configure_gemini_api(gemini_api_key)
+    
+    # Delete old caches with the same display name
+    max_retries = 3
+    retry_delay = 2 # seconds
+    cache_list = None
+    for attempt in range(max_retries):
+        try:
+            cache_list = caching.CachedContent.list()
+            logger.info(f"Successfully listed caches on attempt {attempt + 1}")
+            break # Success, exit loop
+        except exceptions.ServiceUnavailable as e:
+            logger.warning(f"Attempt {attempt + 1}/{max_retries} failed to list caches: {e}. Retrying in {retry_delay}s...")
+            if attempt + 1 == max_retries:
+                logger.error("Max retries reached for listing caches. Raising error.")
+                raise # Re-raise the last exception if max retries reached
+            time.sleep(retry_delay)
+        except Exception as e: # Catch other potential exceptions during list
+            logger.error(f"Unexpected error listing caches on attempt {attempt + 1}: {e}")
+            raise # Re-raise unexpected errors immediately
+
+    if cache_list is not None:
+        logger.info(f"Result of caching.CachedContent.list(): {cache_list}")
+        logger.info(f"Type of cache_list: {type(cache_list)}")
+        for cache in cache_list:
+            if cache is not None:
+                if cache.display_name == display_name:
+                    return cache.name
+            else:
+                logger.warning("Encountered None value while iterating through cache_list")
+    cache = caching.CachedContent.create(
+        model=CONTEXT_CACHING_RETRIVER,
+        display_name=display_name,  # used to identify the cache
+        contents=documentation,
+        system_instruction=system_prompt,
+        ttl=datetime.timedelta(minutes=30),
+    )
+    return cache.name
+
+
+def delete_cache(display_name: str):
+    # Delete old display name
+    cache_list = caching.CachedContent.list()
+    for cache in cache_list:
+        if cache.display_name == display_name:
+            cache.delete()
+            return None
+
