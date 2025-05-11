@@ -649,7 +649,7 @@ if __name__ == "__main__":
     cache_name = service.insert_index_and_cache("https://github.com/julien-blanchon/arxflix", os.getenv("GEMINI_API_KEY"))
 
     repository_name_test = "arxflix"
-    user_problem_test = "Present this repository in a way that is easy to understand"
+    user_problem_test = "The documentation of this repo is not very good. I need you to generate a complete precide documentation of this repo. Really detailled."
 
     # This is the main "documentation" input, typically representing code files.
     documentation_input_test = None
@@ -673,7 +673,8 @@ if __name__ == "__main__":
             user_problem=user_problem_test,
             documentation_md=documentation_md_input_test,
             config_input=config_input_test,
-            GEMINI_API_KEY=os.getenv("GEMINI_API_KEY")  # Pass the API key here
+            GEMINI_API_KEY=os.getenv("GEMINI_API_KEY"),  # Pass the API key here
+            is_documentation_mode=True
         )
     
     print(answer)
