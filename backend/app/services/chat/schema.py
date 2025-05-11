@@ -34,7 +34,6 @@ def get_necesary_files(documentation: dict) -> BaseModel:
             checking that filename and file_id are in documentation["documentation"] file_list,
             Accumulating all errors to raise them only once
             """
-            print(values)
             files_list = values.files_list
             errors = []
             documentation_files = documentation.get("documentation")
@@ -49,11 +48,6 @@ def get_necesary_files(documentation: dict) -> BaseModel:
                 if not found:
                     errors.append(
                         f"File {file.file_name} with id {file.file_id} not found in documentation. "
-                    )
-                    print(
-                        (
-                            f"File ({file.file_name},{file.file_id}) not found in documentation"
-                        )
                     )
 
             # make sure the justification is present to
@@ -91,6 +85,15 @@ def get_markdown_documentation(code_documentation_json: List[Dict[str, Any]], re
         An instance of the markdown_documentation Pydantic model, representing the structured
         documentation ready for Markdown rendering.
     """
+
+    # Create this at function level before defining classes
+    original_files = {
+        (file_info["file_name"], file_info["file_id"])
+        for file_list in [code_documentation_json, readme_doc_json, config_doc_json]
+        if isinstance(file_list, list)
+        for file_info in file_list
+        if isinstance(file_info, dict) and "file_name" in file_info and "file_id" in file_info
+    }
 
     class file_source(BaseModel):
         """
@@ -136,33 +139,19 @@ def get_markdown_documentation(code_documentation_json: List[Dict[str, Any]], re
         def check_sources_are_in_file(cls, values):
             """
             Validates that all file sources listed actually exist in the original input JSON data.
-            Prevents hallucinated file references and ensures data integrity.
             """
-            # Note: Accessing outer scope variables like this in a nested class defined
-            # inside a function requires them to be available in that scope.
-            # This pattern works but can sometimes be less clean than passing context explicitly.
-            # Consider passing `original_files` set as an argument if refactoring.
-
-            if not hasattr(values, 'sources'):  # Check if sources field exists
-                 return values
-
-            # Create sets of dictionaries for comparison
+            if not hasattr(values, 'sources'):
+                return values
+                
+            # Access original_files from parent scope - now explicitly prepared beforehand
             classified_files = {
                 (source.file_name, source.file_id)
                 for source in values.sources
             }
-
-            original_files = {
-                (file_info["file_name"], file_info["file_id"])
-                for file_list in [code_documentation_json, readme_doc_json, config_doc_json]
-                if isinstance(file_list, list) # Ensure inputs are lists
-                for file_info in file_list
-                if isinstance(file_info, dict) and "file_name" in file_info and "file_id" in file_info # Check dict structure
-            }
-
-            # Find hallucinated files (sources listed that were not in the original input)
+            
+            # Find hallucinated files
             hallucinated_files = classified_files - original_files
-
+            
             # Prepare error message if needed
             error_messages = []
 
