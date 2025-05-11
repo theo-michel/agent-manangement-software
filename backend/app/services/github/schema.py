@@ -76,3 +76,69 @@ class FileDescription(BaseModel):
 class DocsResponse(BaseModel):
     repository: RepositoryInfo
     files: List[FileDescription]
+
+class RepoStatus(str, Enum):
+    NOT_INDEXED = "not_indexed"
+    PENDING = "pending"
+    INDEXED = "indexed"
+    FAILED = "failed"
+
+
+class RepositoryOwner(BaseModel):
+    login: str
+    id: int
+    avatar_url: str
+
+
+class RepositoryInfo(BaseModel):
+    id: int
+    name: str
+    full_name: str
+    description: Optional[str] = None
+    default_branch: str
+    stars: int
+    forks: int
+    created_at: str
+    updated_at: str
+    size: int
+    owner: RepositoryOwner
+
+class FileDescription(BaseModel):
+    path: str
+    description: str
+    type: str
+    size: Optional[int] = None
+    language: Optional[str] = None
+
+class RepoStatus(str, Enum):
+    NOT_INDEXED = "not_indexed"
+    PENDING = "pending"
+    INDEXED = "indexed"
+    FAILED = "failed"
+
+
+class RepositoryOwner(BaseModel):
+    login: str
+    id: int
+    avatar_url: str
+
+
+class RepositoryInfo(BaseModel):
+    id: int
+    name: str
+    full_name: str
+    description: Optional[str] = None
+    default_branch: str
+    stars: int
+    forks: int
+    created_at: str
+    updated_at: str
+    size: int
+    owner: RepositoryOwner
+
+class FileDescription(BaseModel):
+    path: str
+    description: str
+    type: str
+    size: Optional[int] = None
+    language: Optional[str] = None

@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 
 from app.database import get_async_session
-from app.services.extract_github.schema import ChatRequest, ChatResponse
+from app.services.github.schema import ChatRequest, ChatResponse
 from app.services.chat.service import ChatService
 
 router = APIRouter(prefix="/chat", tags=["chat"])

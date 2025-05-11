@@ -296,3 +296,47 @@ class ClassifyRequest(BaseModel):
 class ClassifyResponse(BaseModel):
     result: str
 
+class KeyPurpose(BaseModel):
+    """
+    Represents the purpose of a configuration key.
+    """
+
+    key_name: str = Field(description="Name of the configuration key")
+    purpose: str = Field(description="A brief description of the key's purpose")
+    is_sensitive: bool = Field(
+        default=False,
+        description="Indicates if this key likely holds sensitive information",
+    )
+
+
+class SectionPurpose(BaseModel):
+    """
+    Represents the purpose of a section within the configuration.
+    """
+
+    section_name: str = Field(description="Name of the section")
+    purpose: str = Field(description="A brief description of the section's purpose")
+    is_sensitive: bool = Field(
+        default=False,
+        description="Indicates if this section likely contains sensitive information",
+    )
+    key_purposes: List[KeyPurpose] = Field(
+        default=[], description="List of key purposes within this section"
+    )
+
+
+class YamlBrief(BaseModel):
+    """
+    Provides a brief overview of the YAML file's purpose and key elements.
+    """
+
+    file_purpose: str = Field(
+        description="A concise summary of the overall purpose of this YAML file"
+    )
+    sections: List[SectionPurpose] = Field(
+        default=[], description="List of significant sections and their purposes"
+    )
+    standalone_keys: List[KeyPurpose] = Field(
+        default=[],
+        description="List of key-value pairs not part of a distinct section",
+    )

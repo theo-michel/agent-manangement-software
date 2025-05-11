@@ -5,7 +5,7 @@ from typing import Any, Dict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.extract_github.schema import RepositoryStatusResponse
+from app.services.github.schema import RepositoryStatusResponse
 from app.models.models import RepoStatus, Repository
    
    

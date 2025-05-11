@@ -6,6 +6,7 @@ from app.services.indexer.schema import (
     create_file_classification,
     generate_code_structure_model_consize,
     DocumentCompression,
+    YamlBrief
 )
 
 from app.services.indexer.utils import create_cache, list_all_files, SAFE

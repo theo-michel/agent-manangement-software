@@ -8,7 +8,7 @@ import logging
 from app.database import get_async_session
 from app.config import settings
 from app.models.models import Repository, RepositoryFile, RepoStatus
-from app.services.extract_github.schema import (
+from app.services.github.schema import (
     RepositoryInfo,
     RepositoryStatusResponse,
     CheckoutResponse,
@@ -16,7 +16,7 @@ from app.services.extract_github.schema import (
     FileDescription,
 )
 from app.services.indexer.service import IndexerService
-from app.services.github.service import GitHubService
+from app.services.github.service import GithubService
 
 
 router = APIRouter(prefix="/repos", tags=["repository"])
@@ -27,7 +27,7 @@ if settings.STRIPE_API_KEY:
     stripe.api_key = settings.STRIPE_API_KEY
 
 # Initialize GitHub service
-github_service = GitHubService()
+github_service = GithubService()
 indexer_service = IndexerService()
 
 @router.get("/{owner}/{repo}/status", response_model=RepositoryStatusResponse)
@@ -53,7 +53,7 @@ async def index_repository(
     Creates a Stripe checkout session for payment.
     """
     try:
-        cache_name =  await indexer_service.insert_index_and_cache(f"https://github.com/{owner}/{repo}") # TODO make this into owner and repo
+        cache_name = indexer_service.insert_index_and_cache(f"https://github.com/{owner}/{repo}") # TODO make this into owner and repo
         return CheckoutResponse(cache_name=cache_name)
     except ValueError as e: 
         raise HTTPException(status_code=400, detail=str(e))
