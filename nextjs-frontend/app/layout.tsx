@@ -1,6 +1,6 @@
 "use client"
 
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,8 +12,8 @@ const queryClient = new QueryClient();
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <Toaster />
