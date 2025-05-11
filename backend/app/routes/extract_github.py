@@ -16,7 +16,7 @@ from app.services.extract_github.schema import (
     FileDescription,
 )
 from app.services.indexer.service import IndexerService
-from app.services.github.service import GithubService
+from app.services.github.service import GitHubService
 
 
 router = APIRouter(prefix="/repos", tags=["repository"])
@@ -27,7 +27,7 @@ if settings.STRIPE_API_KEY:
     stripe.api_key = settings.STRIPE_API_KEY
 
 # Initialize GitHub service
-github_service = GithubService()
+github_service = GitHubService()
 indexer_service = IndexerService()
 
 @router.get("/{owner}/{repo}/status", response_model=RepositoryStatusResponse)
