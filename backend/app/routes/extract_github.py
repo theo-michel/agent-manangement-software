@@ -7,7 +7,7 @@ import logging
 
 from app.database import get_async_session
 from app.config import settings
-from app.models.models import Repository, RepositoryFile, RepoStatus
+from app.models.models import Repository, RepoStatus
 from app.services.github.schema import (
     RepositoryInfo,
     RepositoryStatusResponse,
@@ -47,16 +47,25 @@ async def get_repository_status(
 async def index_repository(
     owner: str,
     repo: str,
+    session: AsyncSession = Depends(get_async_session),
 ):
     """
     Start the indexing process for a repository.
-    Creates a Stripe checkout session for payment.
+    Creates a Stripe checkout session for payment and saves results to database.
     """
     try:
-        cache_name = indexer_service.insert_index_and_cache(f"https://github.com/{owner}/{repo}") # TODO make this into owner and repo
+        # Use the new method that saves to database
+        cache_name = await indexer_service.save_indexed_data_to_db(
+            owner=owner,
+            repo=repo,
+            session=session
+        )
         return CheckoutResponse(cache_name=cache_name)
     except ValueError as e: 
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error indexing repository {owner}/{repo}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error during indexing")
 
 
 @router.get("/{owner}/{repo}/docs", response_model=DocsResponse)
@@ -81,23 +90,50 @@ async def get_repository_docs(
             detail=f"Repository is not indexed. Current status: {repository.status.value}",
         )
 
-    # Get files with descriptions
-    result = await session.execute(
-        select(RepositoryFile).where(RepositoryFile.repository_id == repository.id)
-    )
-    files = result.scalars().all()
-
-    # Format response
-    file_descriptions = [
-        FileDescription(
-            path=file.path,
-            description=file.description or "",
-            type=file.type,
-            size=file.size,
-            language=file.language,
+    # Get indexed data from the single JSON field
+    indexed_data = repository.indexed_data or {}
+    
+    # Extract file information from the indexed data
+    file_descriptions = []
+    
+    # Process documentation files (code files)
+    documentation_files = indexed_data.get("documentation", [])
+    for file_data in documentation_files:
+        file_descriptions.append(
+            FileDescription(
+                path=file_data.get("file_paths", ""),
+                description=file_data.get("documentation", {}).get("global_code_description", "")[:200],
+                type="code",
+                size=None,
+                language=_get_language_from_path(file_data.get("file_paths", "")),
+            )
         )
-        for file in files
-    ]
+    
+    # Process markdown files
+    documentation_md_files = indexed_data.get("documentation_md", [])
+    for file_data in documentation_md_files:
+        file_descriptions.append(
+            FileDescription(
+                path=file_data.get("file_paths", ""),
+                description=_extract_markdown_description(file_data.get("documentation", {}))[:200],
+                type="documentation",
+                size=None,
+                language="markdown",
+            )
+        )
+    
+    # Process config files
+    config_files = indexed_data.get("config", [])
+    for file_data in config_files:
+        file_descriptions.append(
+            FileDescription(
+                path=file_data.get("file_paths", ""),
+                description=file_data.get("documentation_config", {}).get("file_purpose", "")[:200],
+                type="config",
+                size=None,
+                language=_get_language_from_path(file_data.get("file_paths", "")),
+            )
+        )
 
     # Get repository info
     repo_info = await github_service.get_repository_info(owner, repo)
@@ -107,6 +143,82 @@ async def get_repository_docs(
         files=file_descriptions,
     )
 
+
+def _get_language_from_path(file_path: str) -> str:
+    """Determine programming language from file extension."""
+    if not file_path:
+        return "unknown"
+    
+    extension = file_path.split(".")[-1].lower()
+    language_map = {
+        "py": "python",
+        "js": "javascript",
+        "ts": "typescript",
+        "jsx": "javascript",
+        "tsx": "typescript",
+        "java": "java",
+        "cpp": "cpp",
+        "c": "c",
+        "cs": "csharp",
+        "php": "php",
+        "rb": "ruby",
+        "go": "go",
+        "rs": "rust",
+        "swift": "swift",
+        "kt": "kotlin",
+        "scala": "scala",
+        "r": "r",
+        "sql": "sql",
+        "sh": "shell",
+        "bash": "shell",
+        "zsh": "shell",
+        "fish": "shell",
+        "ps1": "powershell",
+        "html": "html",
+        "css": "css",
+        "scss": "scss",
+        "sass": "sass",
+        "less": "less",
+        "xml": "xml",
+        "json": "json",
+        "yaml": "yaml",
+        "yml": "yaml",
+        "toml": "toml",
+        "ini": "ini",
+        "cfg": "config",
+        "conf": "config",
+        "md": "markdown",
+        "rst": "restructuredtext",
+        "tex": "latex",
+    }
+    
+    return language_map.get(extension, "unknown")
+
+
+def _extract_markdown_description(documentation: dict) -> str:
+    """Extract description from markdown documentation."""
+    if not documentation:
+        return ""
+    
+    # Try to get overview summary first
+    overview = documentation.get("overview_summary", {})
+    if overview and isinstance(overview, dict):
+        summary = overview.get("summary", "")
+        if summary:
+            return summary
+    
+    # Fall back to first section summary
+    sections = documentation.get("sections", [])
+    if sections and len(sections) > 0:
+        first_section = sections[0]
+        if isinstance(first_section, dict):
+            compressed_chunks = first_section.get("compressed_chunks", [])
+            if compressed_chunks and len(compressed_chunks) > 0:
+                first_chunk = compressed_chunks[0]
+                if isinstance(first_chunk, dict):
+                    return first_chunk.get("summary", "")
+    
+    return ""
 
 
 @router.get("/{owner}/{repo}/info", response_model=RepositoryInfo)

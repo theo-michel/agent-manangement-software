@@ -2,5 +2,14 @@
 	"dependencies": {
 		"@radix-ui/react-alert-dialog": "^1.1.13",
 		"@tanstack/react-query": "^5.75.7"
+	},
+	"scripts": {
+		"db:migrate": "cd backend && uv run alembic upgrade head",
+		"db:migrate:generate": "cd backend && uv run alembic revision --autogenerate",
+		"db:migrate:create": "cd backend && uv run alembic revision",
+		"db:migrate:status": "cd backend && uv run alembic current",
+		"db:migrate:history": "cd backend && uv run alembic history --verbose",
+		"db:migrate:downgrade": "cd backend && uv run alembic downgrade -1",
+		"db:migrate:reset": "cd backend && uv run alembic downgrade base && uv run alembic upgrade head"
 	}
 }

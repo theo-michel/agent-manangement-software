@@ -276,6 +276,46 @@ then apply the migration to the database:
    make docker-migrate-db
    ```
 
+### Using pnpm Migration Commands
+For convenience, you can also use the following pnpm commands to manage database migrations (these use `uv run` to execute alembic within the proper Python environment):
+
+#### Generate a new migration (auto-detect changes)
+```bash
+pnpm db:migrate:generate -m "add new column to repository table"
+```
+
+#### Apply all pending migrations
+```bash
+pnpm db:migrate
+```
+
+#### Create an empty migration file
+```bash
+pnpm db:migrate:create -m "custom migration"
+```
+
+#### Check current migration status
+```bash
+pnpm db:migrate:status
+```
+
+#### View migration history
+```bash
+pnpm db:migrate:history
+```
+
+#### Rollback last migration
+```bash
+pnpm db:migrate:downgrade
+```
+
+#### Reset database (downgrade all, then upgrade all)
+```bash
+pnpm db:migrate:reset
+```
+
+These commands are shortcuts that execute the corresponding Alembic commands in the backend directory using `uv run`, making it easier to manage migrations from the project root without needing to activate the Python virtual environment manually.
+
 ## GitHub Actions
 This project has a pre-configured GitHub Actions setup to enable CI/CD. The workflow configuration files are inside the .github/workflows directory. You can customize these workflows to suit your project's needs better.
 
@@ -465,7 +505,7 @@ Check our [contributing guide](https://github.com/vintasoftware/nextjs-fastapi-t
 
 You can use our template to kick-start your project or streamline your efforts to secure funding. Starting with a strong foundation can make your product more resilient and allow you to focus on what matters most: delivering value to your customers.
 
-If our template has been part of your journey, we'd love to hear about it! Share your story with us, and we’ll help spread the word about your project through our social media channels, giving it a broader reach.
+If our template has been part of your journey, we'd love to hear about it! Share your story with us, and we'll help spread the word about your project through our social media channels, giving it a broader reach.
 
 Please email us at contact@vintasoftware.com telling us more about how our template helped you boost your project.
 

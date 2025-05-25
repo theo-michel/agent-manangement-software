@@ -14,9 +14,17 @@ interface TreeNode {
   children?: TreeNode[];
 }
 
+interface TreeItem {
+  path: string;
+  title: string;
+  type: string;
+  description: string;
+}
+
 interface SidebarNavigationProps {
   className?: string;
-  onSelectItem: (item: TreeNode) => void;
+  onSelectItem: (item: TreeNode | TreeItem) => void;
+  treeItems?: TreeItem[];
 }
 
 const repoStructure: TreeNode[] = [
@@ -74,11 +82,61 @@ const repoStructure: TreeNode[] = [
   },
 ];
 
-export function SidebarNavigation({ className, onSelectItem }: SidebarNavigationProps) {
+export function SidebarNavigation({ className, onSelectItem, treeItems }: SidebarNavigationProps) {
   const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({
     "1": true,
   });
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Convert TreeItem[] to TreeNode[] structure
+  const convertTreeItemsToNodes = (items: TreeItem[]): TreeNode[] => {
+    const folderMap = new Map<string, TreeNode>();
+    const rootNodes: TreeNode[] = [];
+
+    // Sort items by path to ensure proper folder structure
+    const sortedItems = [...items].sort((a, b) => a.path.localeCompare(b.path));
+
+    sortedItems.forEach((item, index) => {
+      const pathParts = item.path.split('/').filter(Boolean);
+      let currentPath = '';
+      let currentParent: TreeNode[] = rootNodes;
+
+      // Create folder structure
+      for (let i = 0; i < pathParts.length - 1; i++) {
+        currentPath += '/' + pathParts[i];
+        const folderName = pathParts[i];
+        
+        if (!folderMap.has(currentPath)) {
+          const folderNode: TreeNode = {
+            id: `folder-${currentPath}`,
+            name: folderName,
+            type: "folder",
+            path: currentPath,
+            children: []
+          };
+          folderMap.set(currentPath, folderNode);
+          currentParent.push(folderNode);
+        }
+        
+        currentParent = folderMap.get(currentPath)!.children!;
+      }
+
+      // Add the file
+      const fileName = pathParts[pathParts.length - 1] || item.title;
+      const fileNode: TreeNode = {
+        id: `file-${index}`,
+        name: fileName,
+        type: "file",
+        path: item.path,
+      };
+      currentParent.push(fileNode);
+    });
+
+    return rootNodes;
+  };
+
+  // Use provided treeItems or fallback to default structure
+  const treeStructure = treeItems && treeItems.length > 0 ? convertTreeItemsToNodes(treeItems) : repoStructure;
 
   const toggleFolder = (folderId: string) => {
     setExpandedFolders(prev => ({
@@ -177,7 +235,7 @@ export function SidebarNavigation({ className, onSelectItem }: SidebarNavigation
     <div className={cn("flex flex-col h-full", className)}>
       <ScrollArea className="flex-1">
         <div className="p-3">
-          {renderTree(repoStructure)}
+          {renderTree(treeStructure)}
         </div>
       </ScrollArea>
     </div>

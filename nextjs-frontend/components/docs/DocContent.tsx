@@ -5,10 +5,156 @@ import { ChevronRight } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 
+interface FileDescription {
+  path: string;
+  description: string;
+  type: string;
+  size?: number | null;
+  language?: string | null;
+}
+
 interface DocContentProps {
   path: string;
   searchQuery?: string;
+  fileData?: FileDescription;
 }
+
+// Custom markdown parser
+const parseMarkdown = (markdown: string): JSX.Element => {
+  const lines = markdown.split('\n');
+  const elements: JSX.Element[] = [];
+  let currentIndex = 0;
+
+  const processLine = (line: string, index: number): JSX.Element | null => {
+    const trimmedLine = line.trim();
+    
+    // Headers
+    if (trimmedLine.startsWith('# ')) {
+      return <h1 key={index} className="text-3xl font-bold mt-6 mb-4">{trimmedLine.slice(2)}</h1>;
+    }
+    if (trimmedLine.startsWith('## ')) {
+      return <h2 key={index} className="text-2xl font-semibold mt-5 mb-3">{trimmedLine.slice(3)}</h2>;
+    }
+    if (trimmedLine.startsWith('### ')) {
+      return <h3 key={index} className="text-xl font-semibold mt-4 mb-2">{trimmedLine.slice(4)}</h3>;
+    }
+    if (trimmedLine.startsWith('#### ')) {
+      return <h4 key={index} className="text-lg font-semibold mt-3 mb-2">{trimmedLine.slice(5)}</h4>;
+    }
+
+    // Code blocks
+    if (trimmedLine.startsWith('```')) {
+      const language = trimmedLine.slice(3);
+      const codeLines: string[] = [];
+      let i = index + 1;
+      
+      while (i < lines.length && !lines[i].trim().startsWith('```')) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      
+      currentIndex = i; // Skip processed lines
+      
+      return (
+        <pre key={index} className="bg-muted p-4 rounded-lg overflow-x-auto my-4">
+          <code className={`language-${language}`}>
+            {codeLines.join('\n')}
+          </code>
+        </pre>
+      );
+    }
+
+    // Lists
+    if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
+      const listItems: string[] = [trimmedLine.slice(2)];
+      let i = index + 1;
+      
+      while (i < lines.length && (lines[i].trim().startsWith('- ') || lines[i].trim().startsWith('* '))) {
+        listItems.push(lines[i].trim().slice(2));
+        i++;
+      }
+      
+      currentIndex = i - 1;
+      
+      return (
+        <ul key={index} className="list-disc list-inside my-4 space-y-1">
+          {listItems.map((item, idx) => (
+            <li key={idx}>{processInlineMarkdown(item)}</li>
+          ))}
+        </ul>
+      );
+    }
+
+    // Numbered lists
+    if (/^\d+\.\s/.test(trimmedLine)) {
+      const listItems: string[] = [trimmedLine.replace(/^\d+\.\s/, '')];
+      let i = index + 1;
+      
+      while (i < lines.length && /^\d+\.\s/.test(lines[i].trim())) {
+        listItems.push(lines[i].trim().replace(/^\d+\.\s/, ''));
+        i++;
+      }
+      
+      currentIndex = i - 1;
+      
+      return (
+        <ol key={index} className="list-decimal list-inside my-4 space-y-1">
+          {listItems.map((item, idx) => (
+            <li key={idx}>{processInlineMarkdown(item)}</li>
+          ))}
+        </ol>
+      );
+    }
+
+    // Horizontal rule
+    if (trimmedLine === '---' || trimmedLine === '***') {
+      return <hr key={index} className="my-6 border-border" />;
+    }
+
+    // Empty lines
+    if (trimmedLine === '') {
+      return <br key={index} />;
+    }
+
+    // Regular paragraphs
+    return (
+      <p key={index} className="my-3 leading-relaxed">
+        {processInlineMarkdown(trimmedLine)}
+      </p>
+    );
+  };
+
+  const processInlineMarkdown = (text: string): React.ReactNode => {
+    // Process inline code first
+    let processedText = text.replace(/`([^`]+)`/g, '<code class="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">$1</code>');
+    
+    // Bold text
+    processedText = processedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // Italic text
+    processedText = processedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    
+    // Links
+    processedText = processedText.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-primary hover:underline">$1</a>');
+    
+    return <span dangerouslySetInnerHTML={{ __html: processedText }} />;
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    if (i <= currentIndex) continue;
+    
+    const element = processLine(lines[i], i);
+    if (element) {
+      elements.push(element);
+    }
+    
+    if (currentIndex > i) {
+      i = currentIndex;
+    }
+  }
+
+  return <div className="prose prose-slate dark:prose-invert max-w-none">{elements}</div>;
+};
 
 const getDocContent = (path: string): { title: string; content: string } => {
   const docs: Record<string, { title: string; content: string }> = {
@@ -205,100 +351,106 @@ Click on any item in the navigation tree to explore the documentation.
   return docs[path] || docs["default"];
 };
 
-export function DocContent({ path, searchQuery = "" }: DocContentProps) {
-  const [doc, setDoc] = useState<{ title: string; content: string } | null>(null);
-  const [loading, setLoading] = useState(true);
+export function DocContent({ path, searchQuery = "", fileData }: DocContentProps) {
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
-    const timer = setTimeout(() => {
-      setDoc(getDocContent(path));
-      setLoading(false);
-    }, 500);
-
-    return () => clearTimeout(timer);
+    if (path) {
+      setIsLoading(true);
+      const timer = setTimeout(() => setIsLoading(false), 300);
+      return () => clearTimeout(timer);
+    }
   }, [path]);
 
   const highlightSearch = (content: string, query: string) => {
     if (!query) return content;
 
-    const parts = content.split(/(`{3}[\s\S]*?`{3})/g);
-
-    return parts.map((part, index) => {
-      if (part.startsWith("```") && part.endsWith("```")) {
-        return part;
-      }
-
-      if (query) {
-        const regex = new RegExp(`(${query})`, 'gi');
-        return part.replace(regex, '<span class="search-highlight">$1</span>');
-      }
-
-      return part;
-    }).join('');
+    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return content.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-800">$1</mark>');
   };
 
-  const renderMarkdown = (markdown: string, query: string) => {
-    if (query) {
-      markdown = highlightSearch(markdown, query);
+  // Use fileData if available, otherwise fallback to mock data
+  const getContent = () => {
+    if (fileData) {
+      console.log('Processing fileData:', {
+        path: fileData.path,
+        type: fileData.type,
+        descriptionLength: fileData.description.length,
+        descriptionPreview: fileData.description.substring(0, 100) + '...'
+      });
+      
+      return {
+        title: fileData.path.split('/').pop() || fileData.path,
+        content: fileData.description // Use the raw markdown description
+      };
     }
-
-    const html = markdown
-      .replace(/```(.*?)\n([\s\S]*?)```/g, '<pre><code class="language-$1">$2</code></pre>')
-      .replace(/`([^`]+)`/g, '<code>$1</code>')
-      .replace(/^# (.*$)/gm, '<h1>$1</h1>')
-      .replace(/^## (.*$)/gm, '<h2>$1</h2>')
-      .replace(/^### (.*$)/gm, '<h3>$1</h3>')
-      .replace(/^\* (.*$)/gm, '<li>$1</li>')
-      .replace(/^\- (.*$)/gm, '<li>$1</li>')
-      .replace(/^\d+\. (.*$)/gm, '<li>$1</li>')
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>');
-
-    return html;
+    
+    return getDocContent(path);
   };
 
-  if (loading) {
+  const { title, content } = getContent();
+
+  if (isLoading) {
     return (
-      <div className="p-6 max-w-3xl mx-auto">
-        <Skeleton className="h-10 w-3/4 mb-6" />
-        <Skeleton className="h-6 w-full mb-2" />
-        <Skeleton className="h-6 w-5/6 mb-2" />
-        <Skeleton className="h-6 w-full mb-6" />
-
-        <Skeleton className="h-8 w-2/3 mb-4" />
-        <Skeleton className="h-6 w-full mb-2" />
-        <Skeleton className="h-6 w-full mb-2" />
-        <Skeleton className="h-6 w-4/5 mb-6" />
-
-        <Skeleton className="h-32 w-full mb-6" />
-
-        <Skeleton className="h-8 w-2/3 mb-4" />
-        <Skeleton className="h-6 w-full mb-2" />
-        <Skeleton className="h-6 w-3/4 mb-2" />
+      <div className="flex flex-col h-full">
+        <div className="border-b p-4">
+          <Skeleton className="h-8 w-64" />
+        </div>
+        <ScrollArea className="flex-1">
+          <div className="p-6 space-y-4">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
+        </ScrollArea>
       </div>
     );
   }
 
-  if (!doc) {
-    return <div className="p-6">Document not found</div>;
+  if (!path && !fileData) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="border-b p-4">
+          <h1 className="text-2xl font-bold">Welcome</h1>
+        </div>
+        <ScrollArea className="flex-1">
+          <div className="p-6">
+            <p className="text-muted-foreground">
+              Select a file from the sidebar to view its documentation.
+            </p>
+          </div>
+        </ScrollArea>
+      </div>
+    );
   }
 
+  // Apply search highlighting to content before parsing
+  const highlightedContent = highlightSearch(content, searchQuery);
+
   return (
-    <ScrollArea className="h-full">
-      <div className="p-6 max-w-3xl mx-auto">
-        <div className="flex items-center text-sm text-muted-foreground mb-2">
+    <div className="flex flex-col h-full">
+      <div className="border-b p-4">
+        <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-2">
           <span>Documentation</span>
-          <ChevronRight className="mx-1 h-4 w-4" />
-          <span>{path.split('/').filter(Boolean).join(' / ')}</span>
+          <ChevronRight className="h-4 w-4" />
+          <span className="text-foreground">{title}</span>
         </div>
-        <div className="markdown-content">
-          <div dangerouslySetInnerHTML={{
-            __html: renderMarkdown(doc.content, searchQuery)
-          }} />
-        </div>
+        <h1 className="text-2xl font-bold">{title}</h1>
+        {fileData && (
+          <div className="flex gap-4 text-sm text-muted-foreground mt-2">
+            <span>Type: {fileData.type}</span>
+            {fileData.language && <span>Language: {fileData.language}</span>}
+            {fileData.size && <span>Size: {fileData.size} bytes</span>}
+          </div>
+        )}
       </div>
-    </ScrollArea>
+      <ScrollArea className="flex-1">
+        <div className="p-6">
+          {parseMarkdown(highlightedContent)}
+        </div>
+      </ScrollArea>
+    </div>
   );
 }

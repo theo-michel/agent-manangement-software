@@ -8,6 +8,9 @@ from app.services.chat.schema import GoalRewriteModel,get_necesary_files,get_mar
 from app.services.chat.utils import SAFE,get_gemini_pro_25_response
 from app.services.monitor.langfuse import get_langfuse_context,trace,generate_trace_id
 from app.services.llm_service.service import TemplateManager
+from app.services.github.schema import ChatRequest, ChatResponse
+from app.models.models import Repository, RepoStatus
+from app.db.github_data_service import GithubDataService
 import instructor
 import os
 import dotenv
@@ -24,6 +27,8 @@ from pathlib import Path
 from pydantic import BaseModel
 import logging
 import traceback
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 logger = logging.getLogger(__name__)
 
@@ -495,6 +500,7 @@ class ChatService(ClassifierConfig):
         self.context_caching_retriver = Context_Caching_Retriver_Node()
         self.final_response_generator = Final_Response_Generator_Node()
         self.genrate_detailed_documentation = GenrateDetailedDocumentationNode()
+        self.github_data_service = GithubDataService()
     
     def run_pipeline(self, repository_name: str, 
                      cache_id: str = "", 
@@ -593,71 +599,133 @@ class ChatService(ClassifierConfig):
             )
         return final_response_generator_output
 
+    async def chat_with_repository(
+        self, 
+        owner: str, 
+        repo: str, 
+        chat_request: ChatRequest, 
+        session: AsyncSession
+    ) -> ChatResponse:
+        """
+        Chat with a repository using indexed data from the database or single JSON file.
+        """
+        try:
+            # Check if repository exists and is indexed
+            result = await session.execute(
+                select(Repository).where(Repository.full_name == f"{owner}/{repo}")
+            )
+            repository = result.scalars().first()
+            
+            if not repository:
+                raise ValueError(f"Repository {owner}/{repo} not found")
+            
+            if repository.status != RepoStatus.INDEXED:
+                raise ValueError(f"Repository {owner}/{repo} is not indexed yet. Current status: {repository.status.value}")
+            
+            # Try to get data from database first
+            indexed_data = await self.github_data_service.get_indexed_data(owner, repo, session)
+            
+            if indexed_data:
+                # Use data from database
+                documentation_input = {"documentation": indexed_data.get("documentation", [])}
+                documentation_md_input = {"documentation_md": indexed_data.get("documentation_md", [])}
+                config_input = {"config": indexed_data.get("config", [])}
+                logger.info(f"Loaded indexed data from database for {owner}/{repo}")
+            else:
+                # Fallback to single JSON file
+                indexed_data_path = f"indexed_data/{repo}.json"
+                
+                if not os.path.exists(indexed_data_path):
+                    raise ValueError(f"No indexed data found for repository {owner}/{repo}")
+                
+                try:
+                    with open(indexed_data_path, "r") as f:
+                        combined_data = json.load(f)
+                    
+                    documentation_input = {"documentation": combined_data.get("documentation", [])}
+                    documentation_md_input = {"documentation_md": combined_data.get("documentation_md", [])}
+                    config_input = {"config": combined_data.get("config", [])}
+                    logger.info(f"Loaded indexed data from single JSON file for {owner}/{repo}")
+                    
+                except Exception as e:
+                    logger.error(f"Error loading indexed data for {owner}/{repo}: {str(e)}")
+                    raise ValueError(f"Error loading indexed data: {str(e)}")
+            
+            # Use existing pipeline to generate response
+            response_text = self.run_pipeline(
+                repository_name=repo,
+                cache_id="",  # Could be populated if cache is available
+                documentation=documentation_input,
+                user_problem=chat_request.message,
+                documentation_md=documentation_md_input,
+                config_input=config_input,
+                GEMINI_API_KEY=os.getenv("GEMINI_API_KEY"),
+                is_documentation_mode=False
+            )
+            
+            # Format response
+            return ChatResponse(
+                response=response_text,
+                code_snippets=[],  # Could be extracted from response if needed
+                source_files=[]    # Could be populated with relevant files
+            )
+            
+        except Exception as e:
+            logger.error(f"Error in chat_with_repository: {str(e)}")
+            raise
 
 
 if __name__ == "__main__":
     import os
     import json
-    import shutil
     import traceback
 
-    # This test script will be placed directly in the if __name__ == "__main__" block.
-    # Librairie_Service is already defined in this file.
+    print("--- Starting Test for ChatService ---")
 
-    TEMP_DIR = "temp_test_files_for_librairie_service"
-
-
-
-    print("--- Starting Test for Librairie_Service ---")
-
-
-    # --- Prepare Fake Data for run_pipeline ---
-    repository_name_test = "Arfxflix"
-    cache_id_test = "test_cache_integration_001" # Ensure this cache_id exists if using actual caching system
-    user_problem_test = "Presnt this repo in simple words"
+    # --- Prepare Test Data ---
+    repository_name_test = "arxflix"
+    user_problem_test = "Present this repo in simple words"
     
-    # The GEMINI_API_KEY is passed to run_pipeline.
-
+    # Load from single JSON file
+    indexed_data_path = f"indexed_data/{repository_name_test}.json"
     
+    if not os.path.exists(indexed_data_path):
+        print(f"Error: Single JSON file not found: {indexed_data_path}")
+        print("Please run indexing first to create the file.")
+        exit(1)
 
-    # This is the main "documentation" input, typically representing code files.
-    documentation_input_test = None
-    with open("backend/tests/tmp_test/documentation.json", "r") as f:
-        documentation_input_test = {"documentation": json.load(f)}
+    with open(indexed_data_path, "r") as f:
+        combined_data = json.load(f)
 
-    # This represents Markdown documentation files.
-    documentation_md_input_test = None
-    with open("backend/tests/tmp_test/documentation_md.json", "r") as f:
-        documentation_md_input_test = {"documentation_md": json.load(f)}
-
-    # This represents configuration files (e.g., JSON, YAML).
-    config_input_test = None
-    with open("backend/tests/tmp_test/config.json", "r") as f:
-        config_input_test = {"config": json.load(f)}
+    # Extract components for chat service
+    documentation_input_test = {"documentation": combined_data.get("documentation", [])}
+    documentation_md_input_test = {"documentation_md": combined_data.get("documentation_md", [])}
+    config_input_test = {"config": combined_data.get("config", [])}
 
     # --- Instantiate Service ---
-    # Librairie_Service is defined in the current file.
-    librairie_service_instance = ChatService()
+    chat_service_instance = ChatService()
 
     # --- Run Pipeline ---
     print(f"\nRunning pipeline for repository: {repository_name_test}...")
     print(f"User problem: {user_problem_test}")
-    final_result = None
+    print(f"Loaded {len(documentation_input_test['documentation'])} documentation files")
+    print(f"Loaded {len(documentation_md_input_test['documentation_md'])} markdown files")
+    print(f"Loaded {len(config_input_test['config'])} config files")
+    
     try:
-        print(f"Using GEMINI_API_KEY: {'Provided' if os.getenv("GEMINI_API_KEY") else 'Not provided (will rely on env or default)'}")
+        print(f"Using GEMINI_API_KEY: {'Provided' if os.getenv('GEMINI_API_KEY') else 'Not provided (will rely on env or default)'}")
 
-        final_result = librairie_service_instance.run_pipeline(
+        final_result = chat_service_instance.run_pipeline(
             repository_name=repository_name_test,
-            cache_id="cachedContents/vinldk2v9mojw3tbr1r99ni5g652snvru6cob138", #hardocded
+            cache_id="",  # No cache for this test
             documentation=documentation_input_test,
             user_problem=user_problem_test,
             documentation_md=documentation_md_input_test,
             config_input=config_input_test,
-            GEMINI_API_KEY=os.getenv("GEMINI_API_KEY")  # Pass the API key here
+            GEMINI_API_KEY=os.getenv("GEMINI_API_KEY")
         )
         print("\n--- Pipeline Execution Succeeded ---")
         print("Final Result:")
-        # The result is expected to be a string (the generated answer).
         print(final_result)
 
     except Exception as e:
@@ -666,4 +734,4 @@ if __name__ == "__main__":
         print("Traceback:")
         traceback.print_exc()
     finally:
-        print("\n--- Test for Librairie_Service Finished ---")
+        print("\n--- Test for ChatService Finished ---")

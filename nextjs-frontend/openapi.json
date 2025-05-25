@@ -853,7 +853,7 @@
           "repository"
         ],
         "summary": "Index Repository",
-        "description": "Start the indexing process for a repository.\nCreates a Stripe checkout session for payment.",
+        "description": "Start the indexing process for a repository.\nCreates a Stripe checkout session for payment and saves results to database.",
         "operationId": "index_repository",
         "parameters": [
           {

@@ -19,9 +19,13 @@ import google.generativeai as genai
 import logging
 from app.services.monitor.langfuse import get_langfuse_context,trace,generate_trace_id
 from pathlib import Path
+from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import datetime
 
 from app.services.chat.service import ChatService
 from app.services.github.service import GithubService
+from app.db.github_data_service import GithubDataService
+from app.models.models import RepoStatus
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.append(project_root)
 
@@ -555,15 +559,11 @@ class IndexerService:
         self.information_compressor_node = InformationCompressorNode()
         self.trace_id = generate_trace_id()
         self.github_service = GithubService()
-        #create docstrings_json folder if it doesn't exist
-        if not os.path.exists("docstrings_json"):
-            os.makedirs("docstrings_json")
-        #create ducomentations_json folder if it doesn't exist
-        if not os.path.exists("ducomentations_json"):
-            os.makedirs("ducomentations_json")
-        #create configs_json folder if it doesn't exist
-        if not os.path.exists("configs_json"):
-            os.makedirs("configs_json")
+        self.github_data_service = GithubDataService()
+        
+        # Create indexed_data folder for single JSON files
+        if not os.path.exists("indexed_data"):
+            os.makedirs("indexed_data")
     def run_pipeline(self, folder_path: str, batch_size: int = 50, max_workers: int = 10, GEMINI_API_KEY: str = "", ANTHROPIC_API_KEY: str = "", OPENAI_API_KEY: str = ""):
         # Classifier Node
         classifier_result = self.classifier_node.llmclassifier(
@@ -586,15 +586,13 @@ class IndexerService:
             trace_id=self.trace_id  # Pass trace_id explicitly
         )
         return information_compressor_result
-    def insert_index_and_cache(self, link: str, gemini_api_key=None)->str:
+    async def insert_index_and_cache(self, link: str, gemini_api_key=None, session: AsyncSession = None)->str:
         
         if gemini_api_key is None:
             gemini_api_key = os.getenv("GEMINI_API_KEY")
     
         display_name = link.split("/")[-1]
-        documentation_path = f"docstrings_json/{display_name}.json"
-        documentation_md_path = f"ducomentations_json/{display_name}.json"
-        config_path = f"configs_json/{display_name}.json"
+        indexed_data_path = f"indexed_data/{display_name}.json"
         repo_path = self.github_service.clone_github_repo("repository_folder", link)
 
         system_prompt = """
@@ -607,76 +605,187 @@ class IndexerService:
             "repository_name", display_name
         )
 
-        # Check if documentation file already exists
-        if os.path.exists(documentation_path):
-            # Load existing documentation
-            with open(documentation_path, "r") as f:
-                documentation_json = json.load(f)
+        # Check if single JSON file already exists
+        if os.path.exists(indexed_data_path):
+            # Load existing single JSON data
+            with open(indexed_data_path, "r") as f:
+                combined_json = json.load(f)
+            
+            # Extract individual components for backward compatibility with chat service
+            documentation_json = {"documentation": combined_json.get("documentation", [])}
+            documentation_md_json = {"documentation_md": combined_json.get("documentation_md", [])}
+            config_json = {"config": combined_json.get("config", [])}
+            
         else:
-            # Get the documentation json from the fastapi documentation generation server
+            # Run indexing pipeline
             logger.info(f"Calling indexer service for {repo_path} with GEMINI_API_KEY: {gemini_api_key[0:5]}")
             try:
-                response = self.run_pipeline(folder_path=repo_path, GEMINI_API_KEY=gemini_api_key) # Use repo_path directly
+                response = self.run_pipeline(folder_path=repo_path, GEMINI_API_KEY=gemini_api_key)
             except Exception as e:
                 raise Exception(f"Failed to get documentation from the server: {e},{traceback.format_exc()}")
 
+            # Create individual JSON structures for compatibility
             documentation_json = {"documentation": response["documentation"]}
             documentation_md_json = {"documentation_md": response["documentation_md"]}
             config_json = {"config": response["config"]}
 
-            logger.info("Loaded existing documentation_json\n Loaded existing config\n Loaded existing documentation_md")
+            # Create combined JSON structure
+            combined_json = {
+                "documentation": response["documentation"],
+                "documentation_md": response["documentation_md"],
+                "config": response["config"],
+                "summary": {
+                    "total_files": len(response["documentation"]) + len(response["documentation_md"]) + len(response["config"]),
+                    "indexed_at": datetime.utcnow().isoformat(),
+                    "documentation_files": len(response["documentation"]),
+                    "markdown_files": len(response["documentation_md"]),
+                    "config_files": len(response["config"])
+                }
+            }
 
-            # Save the documentation_json to a file
-            with open(documentation_path, "w") as f1:
-                json.dump(documentation_json, f1, indent=4)
-            # Save the config_json to a file
-            with open(documentation_md_path, "w") as f2:
-                json.dump(documentation_md_json, f2, indent=4)
-            # Save the config_json to a file
-            with open(config_path, "w") as f3:
-                json.dump(config_json, f3, indent=4)
+            logger.info("Generated new indexed data")
+
+            # Save the single combined JSON file
+            with open(indexed_data_path, "w") as f:
+                json.dump(combined_json, f, indent=4)
+
+        # Save to database if session is provided
+        if session:
+            try:
+                # Extract owner and repo from link
+                parts = link.rstrip("/").split("/")
+                owner = parts[-2]
+                repo = parts[-1]
+                
+                # Get repository info from GitHub
+                repo_info = await self.github_service.get_repository_info(owner, repo)
+                repo_info_dict = {
+                    "id": repo_info.id,
+                    "description": repo_info.description,
+                    "default_branch": repo_info.default_branch,
+                    "stars": repo_info.stars,
+                    "forks": repo_info.forks,
+                    "size": repo_info.size,
+                }
+                
+                # Create or update repository with INDEXED status
+                repository = await self.github_data_service.create_or_update_repository(
+                    owner=owner,
+                    repo=repo,
+                    repo_info=repo_info_dict,
+                    status=RepoStatus.INDEXED,
+                    session=session
+                )
+                
+                # Save indexed data to database using the simplified approach
+                await self.github_data_service.save_indexed_data(
+                    repository=repository,
+                    documentation_data=documentation_json,
+                    documentation_md_data=documentation_md_json,
+                    config_data=config_json,
+                    session=session
+                )
+                
+                logger.info(f"Successfully saved repository {owner}/{repo} to database")
+                
+            except Exception as e:
+                logger.error(f"Error saving to database: {str(e)}")
+                # Don't raise the exception, just log it so the cache creation can continue
 
         documentation_str = str(documentation_json)
         cache_name = create_cache(display_name, documentation_str, system_prompt, gemini_api_key)
 
         return cache_name
 
+    async def save_indexed_data_to_db(
+        self,
+        owner: str,
+        repo: str,
+        session: AsyncSession,
+        gemini_api_key: str = None
+    ) -> str:
+        """
+        Save indexed repository data to the database.
+        This method handles the complete flow of indexing and saving to database.
+        """
+        try:
+            # Set repository status to PENDING
+            repo_info = await self.github_service.get_repository_info(owner, repo)
+            repo_info_dict = {
+                "id": repo_info.id,
+                "description": repo_info.description,
+                "default_branch": repo_info.default_branch,
+                "stars": repo_info.stars,
+                "forks": repo_info.forks,
+                "size": repo_info.size,
+            }
+            
+            # Create or update repository with PENDING status
+            repository = await self.github_data_service.create_or_update_repository(
+                owner=owner,
+                repo=repo,
+                repo_info=repo_info_dict,
+                status=RepoStatus.PENDING,
+                session=session
+            )
+            
+            # Run indexing process
+            link = f"https://github.com/{owner}/{repo}"
+            cache_name = await self.insert_index_and_cache(link, gemini_api_key, session)
+            
+            logger.info(f"Successfully indexed and saved repository {owner}/{repo} to database")
+            return cache_name
+            
+        except Exception as e:
+            # Set repository status to FAILED if something goes wrong
+            try:
+                await self.github_data_service.create_or_update_repository(
+                    owner=owner,
+                    repo=repo,
+                    repo_info=repo_info_dict,
+                    status=RepoStatus.FAILED,
+                    session=session
+                )
+            except:
+                pass  # Don't fail if we can't update status
+            
+            logger.error(f"Error indexing repository {owner}/{repo}: {str(e)}")
+            raise
+
 # test
 if __name__ == "__main__":
+    import asyncio
     
+    async def main():
+        service = IndexerService()
+        chat = ChatService()
+        cache_name = await service.insert_index_and_cache("https://github.com/julien-blanchon/arxflix", os.getenv("GEMINI_API_KEY"))
+
+        repository_name_test = "arxflix"
+        user_problem_test = "The documentation of this repo is not very good. I need you to generate a complete precide documentation of this repo. Really detailled."
+
+        # Load from single JSON file
+        indexed_data_path = f"indexed_data/{repository_name_test}.json"
+        with open(indexed_data_path, "r") as f:
+            combined_data = json.load(f)
+
+        # Extract components for chat service
+        documentation_input_test = {"documentation": combined_data.get("documentation", [])}
+        documentation_md_input_test = {"documentation_md": combined_data.get("documentation_md", [])}
+        config_input_test = {"config": combined_data.get("config", [])}
+
+        answer = chat.run_pipeline(
+                repository_name=repository_name_test,
+                cache_id=cache_name,
+                documentation=documentation_input_test,
+                user_problem=user_problem_test,
+                documentation_md=documentation_md_input_test,
+                config_input=config_input_test,
+                GEMINI_API_KEY=os.getenv("GEMINI_API_KEY"),
+                is_documentation_mode=True
+            )
+        
+        print(answer)
     
-    service = IndexerService()
-    chat = ChatService()
-    cache_name = service.insert_index_and_cache("https://github.com/julien-blanchon/arxflix", os.getenv("GEMINI_API_KEY"))
-
-    repository_name_test = "arxflix"
-    user_problem_test = "The documentation of this repo is not very good. I need you to generate a complete precide documentation of this repo. Really detailled."
-
-    # This is the main "documentation" input, typically representing code files.
-    documentation_input_test = None
-    with open(f"docstrings_json/{repository_name_test}.json", "r") as f:
-        documentation_input_test = json.load(f)
-
-    # This represents Markdown documentation files.
-    documentation_md_input_test = None
-    with open(f"ducomentations_json/{repository_name_test}.json", "r") as f:
-        documentation_md_input_test = json.load(f)
-
-    # This represents configuration files (e.g., JSON, YAML).
-    config_input_test = None
-    with open(f"configs_json/{repository_name_test}.json", "r") as f:
-        config_input_test = json.load(f)
-
-    answer = chat.run_pipeline(
-            repository_name=repository_name_test,
-            cache_id=cache_name,
-            documentation=documentation_input_test,
-            user_problem=user_problem_test,
-            documentation_md=documentation_md_input_test,
-            config_input=config_input_test,
-            GEMINI_API_KEY=os.getenv("GEMINI_API_KEY"),  # Pass the API key here
-            is_documentation_mode=True
-        )
-    
-    print(answer)
+    asyncio.run(main())
     

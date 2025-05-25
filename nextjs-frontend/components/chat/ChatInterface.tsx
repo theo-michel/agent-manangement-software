@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import {
   Popover,
   PopoverContent,
@@ -20,7 +20,12 @@ interface ModelOption {
   isPro: boolean;
 }
 
-export function ChatInterface() {
+interface ChatInterfaceProps {
+  owner?: string;
+  repo?: string;
+}
+
+export function ChatInterface({ owner, repo }: ChatInterfaceProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
   const [selectedModel, setSelectedModel] = useState<ModelOption>({
@@ -32,6 +37,11 @@ export function ChatInterface() {
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const router = useRouter();
+  const params = useParams();
+
+  // Get repository info from props or URL params
+  const repoOwner = owner || (params?.owner as string);
+  const repoName = repo || (params?.repo as string);
 
   const modelOptions: ModelOption[] = [
     {
@@ -78,7 +88,15 @@ export function ChatInterface() {
     console.log("Sending message:", inputMessage);
     console.log("Using model:", selectedModel.name);
 
-    router.push("/chat-details");
+    // Navigate to repository-specific chat page if we have repo info
+    if (repoOwner && repoName) {
+      // Store the message in sessionStorage so it can be sent on the chat page
+      sessionStorage.setItem('pendingChatMessage', inputMessage.trim());
+      router.push(`/${repoOwner}/${repoName}/chat`);
+    } else {
+      // Fallback to generic chat page
+      router.push("/chat-details");
+    }
 
     setInputMessage("");
 
@@ -114,7 +132,7 @@ export function ChatInterface() {
         <div className="flex items-center gap-2">
           <Textarea
             ref={inputRef}
-            placeholder={isExpanded ? "Ask about the documentation..." : "Ask Devin about huggingface/transformers"}
+            placeholder={isExpanded ? "Ask about the documentation..." : "Ask about the repository"}
             className={cn(
               "min-h-10 resize-none flex-1 bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/70",
               isExpanded ? "py-2" : "py-1"
