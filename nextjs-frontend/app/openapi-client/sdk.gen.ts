@@ -333,7 +333,7 @@ export const getRepositoryStatus = <ThrowOnError extends boolean = false>(
 /**
  * Index Repository
  * Start the indexing process for a repository.
- * Creates a Stripe checkout session for payment.
+ * Creates a Stripe checkout session for payment and saves results to database.
  */
 export const indexRepository = <ThrowOnError extends boolean = false>(
   options: OptionsLegacyParser<IndexRepositoryData, ThrowOnError>,

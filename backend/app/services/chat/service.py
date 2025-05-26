@@ -272,19 +272,20 @@ class Documentation_Context_Retriver_Node(ClassifierConfig):
             if config_doc and config_doc[0] != {}:
                 documentation = documentation + config_doc
 
-        for index, doc in enumerate(documentation):
-            doc["file_id"] = index
-
-        user_prompt = user_prompt.replace("FILES_HERE", str(documentation))
+        # Format documentation better for LLM instead of using str(documentation)
+        if documentation:
+            files_info = "\nAvailable files:\n"
+            for doc in documentation:
+                files_info += f"- file_name: {doc.get('file_name', 'unknown')}, file_id: {doc.get('file_id', 'unknown')}\n"
+            user_prompt = user_prompt.replace("FILES_HERE", files_info)
+        else:
+            user_prompt = user_prompt.replace("FILES_HERE", "No files available")
 
         if len(documentation) == 0:
             return {"files_list": []}
 
-
         # Configure Gemini with API key from request if provided
         client_gemini = create_instructor_gemini_client(self.documentation_context_retriver_model, GEMINI_API_KEY)
-            
-
 
         result = process_structured_llm_call(
             client_gemini=client_gemini, 
@@ -320,6 +321,13 @@ class Context_Caching_Retriver_Node(ClassifierConfig):
         # Configure Gemini with API key from request if provided
         client_gemini = create_instructor_gemini_client(self.context_caching_retriver_model, GEMINI_API_KEY, cache_id)
 
+        # Add documentation structure to the user prompt so LLM knows what files are available
+        documentation_files = documentation.get("documentation", [])
+        if documentation_files:
+            files_info = "\n\nAvailable files in the documentation:\n"
+            for file_info in documentation_files:
+                files_info += f"- file_name: {file_info.get('file_name', 'unknown')}, file_id: {file_info.get('file_id', 'unknown')}\n"
+            user_prompt += files_info
 
         list_of_files = process_structured_llm_call(
             client_gemini=client_gemini, 

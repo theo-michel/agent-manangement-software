@@ -63,10 +63,11 @@ export default function RepositoryChatPage() {
     const handleSendMessage = async () => {
         if (!inputMessage.trim() || isLoading) return;
 
+        const messageToSend = inputMessage.trim();
         const userMessage: ChatMessage = {
             id: Date.now().toString(),
             sender: "user",
-            content: inputMessage.trim(),
+            content: messageToSend,
             timestamp: new Date(),
         };
 
@@ -76,7 +77,7 @@ export default function RepositoryChatPage() {
 
         try {
             const chatRequest: ChatRequest = {
-                message: inputMessage.trim(),
+                message: messageToSend,
                 context: null, // You can add context here if needed
             };
 
@@ -96,9 +97,10 @@ export default function RepositoryChatPage() {
                 };
 
                 setMessages(prev => [...prev, aiMessage]);
+            } else {
+                throw new Error('No data received from API');
             }
         } catch (error) {
-            console.error("Error sending message:", error);
             toast.error("Failed to send message. Please try again.");
             
             const errorMessage: ChatMessage = {
@@ -147,9 +149,10 @@ export default function RepositoryChatPage() {
                 };
 
                 setMessages(prev => [...prev, aiMessage]);
+            } else {
+                throw new Error('No data received from API');
             }
         } catch (error) {
-            console.error("Error sending message:", error);
             toast.error("Failed to send message. Please try again.");
             
             const errorMessage: ChatMessage = {
@@ -199,7 +202,7 @@ export default function RepositoryChatPage() {
                                     const filePath = Object.values(file)[0];
                                     return (
                                         <Button
-                                            key={index}
+                                            key={`${message.id}-file-${fileName}-${index}`}
                                             variant="outline"
                                             size="sm"
                                             className={`flex items-center gap-2 transition-all ${
@@ -345,9 +348,9 @@ export default function RepositoryChatPage() {
                                                 <div className="flex-1 space-y-2">
                                                     <div className="flex items-center gap-2">
                                                         <div className="animate-pulse flex space-x-1">
-                                                            <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce"></div>
-                                                            <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                                                            <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                                                            <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" />
+                                                            <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                                                            <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                                                         </div>
                                                         <span className="text-sm text-muted-foreground">Thinking...</span>
                                                     </div>
