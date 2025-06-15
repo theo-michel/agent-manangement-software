@@ -64,6 +64,21 @@ def _get_system_prompt() -> str:
     ```
     """
 
+def _extract_json_from_response(text: str) -> str:
+    """
+    Finds and extracts a JSON object from a string, even if it's wrapped
+    in markdown code fences.
+    """
+    # Find the first '{' which marks the beginning of the JSON
+    start_index = text.find('{')
+    # Find the last '}' which marks the end of the JSON
+    end_index = text.rfind('}')
+
+    if start_index == -1 or end_index == -1:
+        raise ValueError("No valid JSON object found in the AI response.")
+
+    return text[start_index : end_index + 1]
+
 
 async def create_new_card_from_prompt(
     agent_request: AgentRequest,
@@ -83,7 +98,8 @@ async def create_new_card_from_prompt(
         )
 
         response_text = message.content[0].text
-        response_json = json.loads(response_text)
+        cleaned_json_text = _extract_json_from_response(response_text)
+        response_json = json.loads(cleaned_json_text)
 
         if "error" in response_json:
             raise ValueError(response_json["error"])
