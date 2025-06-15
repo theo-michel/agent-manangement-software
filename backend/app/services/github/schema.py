@@ -40,7 +40,7 @@ class AgentResponse(BaseModel):
 class TaskType(str, Enum):
     """The types of tasks our agent can create. Start with one, add more later."""
 
-    REPORTING = "reporting_task"
+    PHONE = "phone_task"
     RESEARCH = "research_task"
 
 
