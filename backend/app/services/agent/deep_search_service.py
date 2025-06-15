@@ -22,7 +22,7 @@ def _create_agent() -> CodeAgent:
     model_id = "claude-sonnet-4-20250514"
     model = LiteLLMModel(model_id=model_id, temperature=0.1)
     search_tool = DuckDuckGoSearchTool()
-    agent = CodeAgent(tools=[search_tool], model=model)
+    agent = CodeAgent(tools=[search_tool], model=model, max_steps=2)
     logger.info("Deep Search Agent created successfully!")
     return agent
 
