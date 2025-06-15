@@ -1,6 +1,5 @@
 import os
 from smolagents import CodeAgent, LiteLLMModel
-# Corrected import: The search tool is DuckDuckGoSearchTool in the smolagents.default_tools submodule
 from smolagents.default_tools import DuckDuckGoSearchTool
 import dotenv
 
@@ -47,7 +46,6 @@ def create_deep_search_agent():
     agent = CodeAgent(
         tools=[search_tool],
         model=model,
-        #stream_outputs=True, # Set to True to see the agent's thoughts in real-time
     )
     
     print("Agent created successfully!")
