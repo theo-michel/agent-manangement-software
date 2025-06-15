@@ -1,516 +1,364 @@
-# DeepGithub
+# Agent Management Software
+
+A powerful task orchestration platform built for the **Unaite & Hugging Face Hackathon (June 15th, 2025)**. This project provides an intelligent agent management system with a Trello-like interface for creating, managing, and executing AI-powered tasks with real-world integrations.
 
 ## Table of Contents
-* [Production-Ready Authentication & Dashboard](#production-ready-authentication-and-dashboard)
-* [Getting Started with This Template](#getting-started-with-this-template)
-* [Setup](#local-setup)
+* [About](#about)
+* [Features](#features)
+* [Hackathon Information](#hackathon-information)
+* [Architecture](#architecture)
+* [Setup](#setup)
   * [Installing Required Tools](#installing-required-tools)
-    * [1. uv](#1-uv)
-    * [2. Node.js, npm and pnpm](#2-nodejsm-npm-and-pnpm)
-    * [3. Docker](#3-docker)
-    * [4. Docker Compose](#4-docker-compose)
   * [Setting Up Environment Variables](#setting-up-environment-variables)
   * [Running the Database](#running-the-database)
-  * [Build the project (without Docker)](#build-the-project-without-docker)
-    * [Backend](#backend)
-    * [Frontend](#frontend)
-  * [Build the project (with Docker)](#build-the-project-with-docker)
-    * [Backend](#backend)
-    * [Frontend](#frontend)
+  * [Build the project](#build-the-project)
 * [Running the Application](#running-the-application)
-* [Hot Reload on development](#hot-reload-on-development)
-  * [Manual Execution of Hot Reload Commands](#manual-execution-of-hot-reload-commands)
+* [API Endpoints](#api-endpoints)
+* [Agent Types](#agent-types)
 * [Testing](#testing)
-* [Email Localhost Setup](#email-localhost-setup)
-* [Pre-Commit Setup](#pre-commit-setup)
-  * [Installing and Activating Pre-Commit Hooks](#installing-and-activating-pre-commit-hooks)
-  * [Running Pre-Commit Checks](#running-pre-commit-checks)
-  * [Updating Pre-Commit Hooks](#updating-pre-commit-hooks)
-* [Alembic Database Migrations](#alembic-database-migrations)
-* [GitHub Actions](#github-actions)
-  * [Secrets Configuration](#secrets-configuration)
-* [Production Deployment](#production-deployment)
-* [CI (GitHub Actions) Setup for Production Deployment](#ci-github-actions-setup-for-production-deployment)
-* [Post-Deployment Configuration](#post-deployment-configuration)
-* [Makefile](#makefile)
-* [Important Considerations](#important-considerations)
+* [Database Migrations](#database-migrations)
+* [Project Structure](#project-structure)
 * [Contributing](#contributing)
-* [Share your project!](#share-your-project)
-* [Commercial Support](#commercial-support)
 
 ## About
-This template streamlines building APIs with [FastAPI](https://fastapi.tiangolo.com/) and dynamic frontends with [Next.js](https://nextjs.org/). It integrates the backend and frontend using [@hey-api/openapi-ts](https://github.com/hey-api/openapi-ts) to generate a type-safe client, with automated watchers to keep the OpenAPI schema and client updated, ensuring a smooth and synchronized development workflow.  
 
-- [Next.js](https://nextjs.org/): Fast, SEO-friendly frontend framework  
-- [FastAPI](https://fastapi.tiangolo.com/): High-performance Python backend  
-- [SQLAlchemy](https://www.sqlalchemy.org/): Powerful Python SQL toolkit and ORM
-- [PostgreSQL](https://www.postgresql.org/): Advanced open-source relational database
-- [Pydantic](https://docs.pydantic.dev/): Data validation and settings management using Python type annotations
-- [Zod](https://zod.dev/) + [TypeScript](https://www.typescriptlang.org/): End-to-end type safety and schema validation  
-- [fastapi-users](https://fastapi-users.github.io/fastapi-users/): Complete authentication system with:
-  - Secure password hashing by default
-  - JWT (JSON Web Token) authentication
-  - Email-based password recovery
-- [Shadcn/ui](https://ui.shadcn.com/): Beautiful and customizable React components
-- [OpenAPI-fetch](https://github.com/Hey-AI/openapi-fetch): Fully typed client generation from OpenAPI schema  
-- [fastapi-mail](https://sabuhish.github.io/fastapi-mail/): Efficient email handling for FastAPI applications
-- [uv](https://docs.astral.sh/uv/): An extremely fast Python package and project manager
-- [Pytest](https://docs.pytest.org/): Powerful Python testing framework
-- Code Quality Tools:
-  - [Ruff](https://github.com/astral-sh/ruff): Fast Python linter
-  - [ESLint](https://eslint.org/): JavaScript/TypeScript code quality
-- Hot reload watchers:  
-  - Backend: [Watchdog](https://github.com/gorakhargosh/watchdog) for monitoring file changes  
-  - Frontend: [Chokidar](https://github.com/paulmillr/chokidar) for live updates  
-- [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/): Consistent environments for development and production
-- [MailHog](https://github.com/mailhog/MailHog): Email server for development
-- [Pre-commit hooks](https://pre-commit.com/): Enforce code quality with automated checks  
-- [OpenAPI JSON schema](https://swagger.io/specification/): Centralized API documentation and client generation  
+This **Agent Management Software** is our submission for the Unaite & Hugging Face Hackathon on June 15th, 2025. The platform combines artificial intelligence agents with real-world task execution capabilities, featuring a visual Trello-style board interface for managing complex workflows.
 
-With this setup, you'll save time and maintain a seamless connection between your backend and frontend, boosting productivity and reliability.
+The system enables users to:
+- Create task cards from natural language prompts using AI
+- Execute tasks with specialized agents (research, phone calls, image generation)
+- Track task dependencies and execution status
+- Integrate with external services (Hugging Face models, phone systems, web search)
+
+## Features
+
+### 🤖 **AI-Powered Task Creation**
+- Natural language to structured task conversion
+- Intelligent task dependency detection
+- Automatic task categorization and prioritization
+
+### 📋 **Visual Task Management**
+- Trello-style board interface with drag-and-drop
+- Real-time task status updates
+- Visual execution progress tracking
+- Automated task flow based on dependencies
+
+### 🔍 **Intelligent Agents**
+- **Deep Search Agent**: Web research with comprehensive analysis
+- **New Card Agent**: Task creation from natural language prompts
+- **Image Generation Agent**: AI-powered image creation using Stable Diffusion
+- **Phone Call Agent**: Automated outbound calls with real phone integration
+
+### 🎯 **Real-World Integrations**
+- **Hugging Face**: Image generation with Stable Diffusion XL
+- **Anthropic Claude**: Advanced language processing
+- **Web Search**: DuckDuckGo integration for research tasks
+- **Phone System**: Real phone call capabilities via VAPI
+- **Database**: Persistent task and execution tracking
+
+### ⚡ **Advanced Execution Features**
+- Asynchronous task processing
+- Execution time tracking and performance metrics
+- Error handling and retry mechanisms
+- Real-time status updates and notifications
+
+## Hackathon Information
+
+**Event**: Unaite & Hugging Face Hackathon  
+**Date**: June 15th, 2025  
+**Theme**: Agent Management and Task Orchestration  
+
+This project demonstrates the integration of multiple AI services and real-world APIs to create a comprehensive agent management platform that can handle complex multi-step workflows.
+
+## Architecture
+
+### Backend Stack
+- **[FastAPI](https://fastapi.tiangolo.com/)**: High-performance Python web framework
+- **[SQLAlchemy](https://www.sqlalchemy.org/)**: Database ORM for task persistence
+- **[PostgreSQL](https://www.postgresql.org/)**: Primary database for task storage
+- **[Pydantic](https://docs.pydantic.dev/)**: Data validation and serialization
+- **[Anthropic Claude](https://www.anthropic.com/)**: Advanced language processing
+- **[Hugging Face](https://huggingface.co/)**: Image generation models
+- **[SmolaAgents](https://github.com/huggingface/smolagents)**: Agent framework
+- **[VAPI](https://vapi.ai/)**: Phone call integration
+- **[uv](https://docs.astral.sh/uv/)**: Fast Python package management
+
+### Frontend Stack
+- **[Next.js 15](https://nextjs.org/)**: React framework with App Router
+- **[React 19](https://react.dev/)**: Latest React with concurrent features
+- **[TypeScript](https://www.typescriptlang.org/)**: Type-safe development
+- **[Tailwind CSS](https://tailwindcss.com/)**: Utility-first styling
+- **[Shadcn/ui](https://ui.shadcn.com/)**: Modern React components
+- **[DND Kit](https://dndkit.com/)**: Drag-and-drop functionality
+- **[Framer Motion](https://www.framer.com/motion/)**: Smooth animations
+
+### Integration Services
+- **Hugging Face Inference API**: For image generation with billing to "agents-hack"
+- **Anthropic Claude Sonnet 4**: For advanced text processing and task creation
+- **DuckDuckGo Search**: For web research capabilities
+- **VAPI**: For real phone call integrations
 
 ## Setup
 
 ### Installing Required Tools
 
 #### 1. uv
-uv is used to manage Python dependencies in the backend. Install uv by following the [official installation guide](https://docs.astral.sh/uv/getting-started/installation/).
+Install uv for Python dependency management:
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
 
-#### 2. Node.js, npm and pnpm
-To run the frontend, ensure Node.js and npm are installed. Follow the [Node.js installation guide](https://nodejs.org/en/download/).
-After that, install pnpm by running:
+#### 2. Node.js and pnpm
+Install Node.js from [nodejs.org](https://nodejs.org/), then install pnpm:
 ```bash
 npm install -g pnpm
 ```
 
 #### 3. Docker
-Docker is needed to run the project in a containerized environment. Follow the appropriate installation guide:
-
-- [Install Docker for Mac](https://docs.docker.com/docker-for-mac/install/)
-- [Install Docker for Windows](https://docs.docker.com/docker-for-windows/install/)
-- [Get Docker CE for Linux](https://docs.docker.com/install/linux/docker-ce/)
-
-#### 4. Docker Compose
-Ensure `docker-compose` is installed. Refer to the [Docker Compose installation guide](https://docs.docker.com/compose/install/).
+Install Docker from [docker.com](https://www.docker.com/) for containerized database.
 
 ### Setting Up Environment Variables
 
-**Backend (`backend/.env`):**
-Copy the `.env.example` files to `.env` and update the variables with your own values.
-   ```bash
-   cd backend && cp .env.example .env
-   ```
-1. You will only need to update the secret keys. You can use the following command to generate a new secret key:
-   ```bash
-   python3 -c "import secrets; print(secrets.token_hex(32))"
-   ```
-2. The DATABASE, MAIL, OPENAPI, CORS, and FRONTEND_URL settings are ready to use locally.
-3. The DATABASE and MAIL settings are already configured in Docker Compose if you're using Docker.
-4. The OPENAPI_URL setting is commented out. Uncommenting it will hide the /docs and openapi.json URLs, which is ideal for production.
-5. You can check the .env.example file for more information about the variables.
+**Backend (`backend/.env`)**:
+```bash
+cd backend && cp .env.example .env
+```
 
-**Frontend (`nextjs-frontend/.env.local`):**
-Copy the `.env.example` files to `.env`. These values are unlikely to change, so you can leave them as they are.
-   ```bash
-   cd nextjs-frontend && cp .env.example .env
-   ```
+Required environment variables:
+```bash
+# Database
+DATABASE_URL=postgresql://user:password@localhost:5432/agent_management
+
+# AI Services
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+HF_TOKEN=your_hugging_face_token_here
+
+# Phone Integration
+VAPI_API_KEY=your_vapi_api_key_here
+VAPI_PHONE_NUMBER_ID=your_vapi_phone_number_id
+
+# API Configuration
+CORS_ORIGINS=["http://localhost:3000"]
+OPENAPI_URL=/openapi.json
+```
+
+**Frontend (`nextjs-frontend/.env.local`)**:
+```bash
+cd nextjs-frontend && cp .env.example .env.local
+```
+
+```bash
+API_BASE_URL=http://localhost:8000
+```
 
 ### Running the Database
-1. Use Docker to run the database to avoid local installation issues. Build and start the database container:
-   ```bash
-   docker compose build db
-   docker compose up -d db
-   ```
-2. Run the following command to apply database migrations:
-   ```bash
-   make docker-migrate-db
-   ```
 
-### Build the Project (without Docker):
-To set the project environment locally, use the following commands:
-
-#### Backend
-
-1. Navigate to the `backend` directory and run:
-   ```bash
-   uv sync
-   ```
-
-#### Frontend
-1. Navigate to the `nextjs-frontend` directory and run:
-   ```bash
-   pnpm install
-   ```
-
-### Build the Project (with Docker):
-
-1. Build the backend and frontend containers:
-   ```bash
-   make docker-build
-   ```
-
-## Running the Application
-
-If you are not using Docker:
-
-1. Start the FastAPI server:
-   ```bash
-   make start-backend
-   ```
-
-2. Start the Next.js development server:
-   ```bash
-   make start-frontend
-   ```
-
-If you are using Docker:
-1. Start the FastAPI server container:
-   ```bash
-   make docker-start-backend
-   ```
-2. Start the Next.js development server container:
-   ```bash
-   make docker-start-frontend
-   ```
-
-- **Backend**: Access the API at `http://localhost:8000`.
-- **Frontend**: Access the web application at `http://localhost:3000`.
-
-### Hot Reload on Development
-The project includes two hot reloads running the application, one for the backend and one for the frontend. These automatically restart local servers when they detect changes, ensuring that the application is always up to date without needing manual restarts.
-
-- The **backend hot reload** monitors changes to the backend code.
-- The **frontend hot reload** monitors changes to the frontend code and the `openapi.json` schema generated by the backend.
-
-### Manual Execution of Hot Reload Commands
-You can manually execute the same commands that the hot reloads call when they detect a change:
-
-1. To export the `openapi.json` schema:
-   ```bash
-   cd backend && uv run python -m commands.generate_openapi_schema
-   ```
-   or using Docker:
-   ```bash
-   docker compose run --rm --no-deps -T backend uv run python -m commands.generate_openapi_schema
-   ```
-
-2. To generate the frontend client:
-   ```bash
-   cd nextjs-frontend && npm run generate-client
-   ```
-   or using Docker:
-   ```bash
-   docker compose run --rm --no-deps -T frontend npm run generate-client
-   ```
-
-## Testing
-To run the tests, you need to run the test database container:
-   ```bash
-   make docker-up-test-db
-   ```
-
-Then run the tests locally:
-   ```bash
-   make test-backend
-   make test-frontend
-   ```
-
-Or using Docker:
-   ```bash
-   make docker-test-backend
-   make docker-test-frontend
-   ```
-## Pre-Commit Setup
-To maintain code quality and consistency, the project includes two separate pre-commit configuration files:
-- `.pre-commit-config.yaml` is used to run pre-commit checks locally.
-- `.pre-commit-config.docker.yaml` is used to run pre-commit checks within Docker.
-
-### Installing and Activating Pre-Commit Hooks
-To activate pre-commit hooks, run the following commands for each configuration file:
-
-- **For the local configuration file**:
-  ```bash
-  pre-commit install -c .pre-commit-config.yaml
-  ```
-
-- **For the Docker configuration file**:
-  ```bash
-  pre-commit install -c .pre-commit-config.docker.yaml
-  ```
-
-### Localhost Email Server Setup
-
-To set up the email server locally, you need to start [MailHog](https://github.com/mailhog/MailHog) by running the following command:
-   ```bash
-   make docker-up-mailhog
-   ```
-
-- **Email client**: Access the email at `http://localhost:8025`.
-
-### Running Pre-Commit Checks
-To manually run the pre-commit checks on all files, use:
-
+Start PostgreSQL with Docker:
 ```bash
-pre-commit run --all-files -c .pre-commit-config.yaml
+docker compose up -d db
 ```
 
-or
-
-```bash
-pre-commit run --all-files -c .pre-commit-config.docker.yaml
-```
-
-### Updating Pre-Commit Hooks
-To update the hooks to their latest versions, run:
-
-```bash
-pre-commit autoupdate
-```
-## Alembic Database Migrations
-If you need to create a new Database Migration:
-   ```bash
-   make docker-db-schema migration_name="add users"
-   ```
-then apply the migration to the database:
-   ```bash
-   make docker-migrate-db
-   ```
-
-### Using pnpm Migration Commands
-For convenience, you can also use the following pnpm commands to manage database migrations (these use `uv run` to execute alembic within the proper Python environment):
-
-#### Generate a new migration (auto-detect changes)
-```bash
-pnpm db:migrate:generate -m "add new column to repository table"
-```
-
-#### Apply all pending migrations
+Apply database migrations:
 ```bash
 pnpm db:migrate
 ```
 
-#### Create an empty migration file
+### Build the Project
+
+#### Backend
 ```bash
-pnpm db:migrate:create -m "custom migration"
+cd backend
+uv sync
 ```
 
-#### Check current migration status
+#### Frontend
 ```bash
-pnpm db:migrate:status
+cd nextjs-frontend
+pnpm install
 ```
 
-#### View migration history
+## Running the Application
+
+### Start Backend
 ```bash
-pnpm db:migrate:history
+make start-backend
+# or manually: cd backend && uv run uvicorn app.main:app --reload
 ```
 
-#### Rollback last migration
+### Start Frontend
 ```bash
-pnpm db:migrate:downgrade
+make start-frontend
+# or manually: cd nextjs-frontend && pnpm dev
 ```
 
-#### Reset database (downgrade all, then upgrade all)
+### Access Points
+- **Frontend Application**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **API Documentation**: http://localhost:8000/docs
+- **OpenAPI Schema**: http://localhost:8000/openapi.json
+
+## API Endpoints
+
+### Core Endpoints
+
+#### `/chat/agent` - Generic Agent Processing
 ```bash
-pnpm db:migrate:reset
+POST /chat/agent
+{
+  "prompt": "Analyze the current AI market trends",
+  "context": {}
+}
 ```
 
-These commands are shortcuts that execute the corresponding Alembic commands in the backend directory using `uv run`, making it easier to manage migrations from the project root without needing to activate the Python virtual environment manually.
-
-## GitHub Actions
-This project has a pre-configured GitHub Actions setup to enable CI/CD. The workflow configuration files are inside the .github/workflows directory. You can customize these workflows to suit your project's needs better.
-
-### Secrets Configuration
-For the workflows to function correctly, add the secret keys to your GitHub repository's settings. Navigate to Settings > Secrets and variables > Actions and add the following keys:
-```
-DATABASE_URL: The connection string for your primary database.
-TEST_DATABASE_URL: The connection string for your test database.
-ACCESS_SECRET_KEY: The secret key for access token generation.
-RESET_PASSWORD_SECRET_KEY: The secret key for reset password functionality.
-VERIFICATION_SECRET_KEY: The secret key for email or user verification.
+#### `/chat/new-card` - Task Card Creation
+```bash
+POST /chat/new-card
+{
+  "prompt": "Research the German EV market and call the team with results"
+}
 ```
 
-## Production Deployment
+#### `/chat/deep-search` - Web Research
+```bash
+POST /chat/deep-search
+{
+  "prompt": "What are the latest developments in renewable energy?"
+}
+```
 
-### Overview
+#### `/chat/generate-image` - Image Generation
+```bash
+POST /chat/generate-image
+{
+  "prompt": "A futuristic solar panel array at sunset"
+}
+```
 
- Deploying to **Vercel** is supported, with dedicated buttons for the **Frontend** and **Backend** applications. Both require specific configurations during and after deployment to ensure proper functionality.
+#### `/chat/outbound-call` - Phone Integration
+```bash
+POST /chat/outbound-call
+{
+  "phone_number": "+33643451397",
+  "message": "Hello, this is an automated call with project updates."
+}
+```
 
----
+## Agent Types
 
-### Frontend Deployment
+### 1. Deep Search Agent
+- **Purpose**: Comprehensive web research
+- **Technology**: SmolaAgents + DuckDuckGo
+- **Features**: Multi-step research, source analysis, comprehensive reporting
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvintasoftware%2Fnextjs-fastapi-template%2Ftree%2Fmain%2Fnextjs-frontend&env=API_BASE_URL&envDescription=The%20API_BASE_URL%20is%20the%20backend%20URL%20where%20the%20frontend%20sends%20requests.)
+### 2. New Card Agent
+- **Purpose**: Convert natural language to structured tasks
+- **Technology**: Claude Sonnet 4
+- **Features**: Dependency detection, task categorization, smart scheduling
 
-1. **Deploying the Frontend**  
-   - Click the **Frontend** button above to start the deployment process.  
-   - During deployment, you will be prompted to set the `API_BASE_URL`. Use a placeholder value (e.g., `https://`) for now, as this will be updated with the backend URL later.  
-   - Complete the deployment process [here](#post-deployment-configuration).
+### 3. Image Generation Agent
+- **Purpose**: AI-powered image creation
+- **Technology**: Hugging Face Stable Diffusion XL
+- **Features**: High-quality image generation, base64 encoding, fast processing
 
-### Backend Deployment
+### 4. Phone Call Agent
+- **Purpose**: Real-world phone integrations
+- **Technology**: VAPI
+- **Features**: Automated calls, contact management, call logging
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvintasoftware%2Fnextjs-fastapi-template%2Ftree%2Fmain%2Fbackend&env=CORS_ORIGINS,ACCESS_SECRET_KEY,RESET_PASSWORD_SECRET_KEY,VERIFICATION_SECRET_KEY&stores=%5B%7B%22type%22%3A%22postgres%22%7D%5D)
+## Testing
 
-1. **Deploying the Backend**  
-   - Click the **Backend** button above to begin deployment.
-   - First, set up the database. The connection is automatically configured, so follow the steps, and it should work by default.
-   - During the deployment process, you will be prompted to configure the following environment variables:
+### Backend Tests
+```bash
+make test-backend
+# or: cd backend && uv run pytest
+```
 
-     - **CORS_ORIGINS**  
-       - Set this to `["*"]` initially to allow all origins. Later, you can update this with the frontend URL.
+### Frontend Tests
+```bash
+make test-frontend
+# or: cd nextjs-frontend && pnpm test
+```
 
-     - **ACCESS_SECRET_KEY**, **RESET_PASSWORD_SECRET_KEY**, **VERIFICATION_SECRET_KEY**  
-       - During deployment, you can temporarily set these secret keys as plain strings (e.g., `examplekey`). However, you should generate secure keys and update them after the deployment in the **Post-Deployment Configuration** section.
+### Live Integration Tests
+Test real API integrations:
+```bash
+# Test image generation (requires HF_TOKEN)
+python backend/test_live_image_generation.py
 
-   - Complete the deployment process [here](#post-deployment-configuration).
+# Test new card creation
+python backend/test_live_new_card.py
 
+# Test outbound calls (requires VAPI credentials)
+python backend/test_outbound_call.py
 
-## CI (GitHub Actions) Setup for Production Deployment
+# Test all endpoints
+python backend/test_api.py
+```
 
-We provide the **prod-backend-deploy.yml** and **prod-frontend-deploy.yml** files to enable continuous integration through Github Actions. To connect them to GitHub, simply move them to the .github/workflows/ directory.
+## Database Migrations
 
-You can do it with the following commands:
-   ```bash
-    mv prod-backend-deploy.yml .github/workflows/prod-backend-deploy.yml
-    mv prod-frontend-deploy.yml .github/workflows/prod-frontend-deploy.yml
-   ```
+### Creating Migrations
+```bash
+pnpm db:migrate:generate -m "add new feature"
+```
 
-### Prerequisites
-1. **Create a Vercel Token**:  
-   - Generate your [Vercel Access Token](https://vercel.com/account/tokens).  
-   - Save the token as `VERCEL_TOKEN` in your GitHub secrets.
-
-2. **Install Vercel CLI**:  
-   ```bash
-   pnpm i -g vercel@latest
-   ```
-3. Authenticate your account.
-    ```bash
-   vercel login
-   ```
-### Database Creation (Required)
-
-   1. **Choosing a Database**
-      - You can use your database hosted on a different service or opt for the [Neon](https://neon.tech/docs/introduction) database, which integrates seamlessly with Vercel.
-
-   2. **Setting Up a Neon Database via Vercel**
-      - In the **Projects dashboard** page on Vercel, navigate to the **Storage** section.  
-      - Select the option to **Create a Database** to provision a Neon database.
-
-   3. **Configuring the Database URL**
-      - After creating the database, retrieve the **Database URL** provided by Neon.  
-      - Include this URL in your **Environment Variables** under `DATABASE_URL`.  
-
-   4. **Migrating the Database**
-      - The database migration will happen automatically during the GitHub action deployment, setting up the necessary tables and schema.
-### Frontend Setup
-
-1. Link the nextjs-frontend Project
-
-2. Navigate to the nextjs-frontend directory and run:
-   ```bash
-   cd nextjs-frontend
-   vercel link
-   ```
-3. Follow the prompts:
-   - Link to existing project? No
-   - Modify settings? No
-
-4. Save Project IDs and Add GitHub Secrets:
-  - Open `nextjs-frontend/.vercel/project.json` and add the following to your GitHub repository secrets:
-    - `projectId` → `VERCEL_PROJECT_ID_FRONTEND`
-    - `orgId` → `VERCEL_ORG_ID`
-
-### Backend Setup
-
-1. Link the backend Project
-
-2. Navigate to the backend directory and run:
-   ```bash
-   cd backend
-   vercel link --local-config=vercel.prod.json
-   ```
-   - We use a specific configuration file to set the --local-config value.
-3. Follow the prompts:
-   - Link to existing project? No
-   - Modify settings? No
-
-4. Save Project IDs and Add GitHub Secrets:
-  - Open `backend/.vercel/project.json` and add the following to your GitHub repository secrets:
-    - `projectId` → `VERCEL_PROJECT_ID_BACKEND`
-    - `orgId` → `VERCEL_ORG_ID` (Only in case you haven't added that before)
-
-### Notes
-- Once everything is set up, run `git push`, and the deployment will automatically occur.
-- Please ensure you complete the setup for both the frontend and backend separately.
-- Refer to the [Vercel CLI Documentation](https://vercel.com/docs/cli) for more details.
-- You can find the project_id in the vercel web project settings.
-- You can find the organization_id in the vercel web organization settings.
-
-## **Post-Deployment Configuration**
-
-### Frontend
-   - Navigate to the **Settings** page of the deployed frontend project.  
-   - Access the **Environment Variables** section.  
-   - Update the `API_BASE_URL` variable with the backend URL once the backend deployment is complete.
-
-### Backend
-   - Access the **Settings** page of the deployed backend project.  
-   - Navigate to the **Environment Variables** section and update the following variables with secure values:
-
-     - **CORS_ORIGINS**  
-       - Once the frontend is deployed, replace `["*"]` with the actual frontend URL.
-
-     - **ACCESS_SECRET_KEY**  
-       - Generate a secure key for API access and set it here.  
-
-     - **RESET_PASSWORD_SECRET_KEY**
-       - Generate a secure key for password reset functionality and set it.
-
-     - **VERIFICATION_SECRET_KEY**  
-       - Generate a secure key for user verification and configure it.
-
-   - For detailed instructions on setting these secret keys, please look at the section on [Setting up Environment Variables](#setting-up-environment-variables).
-
-### Fluid Serverless Activation
-[Fluid](https://vercel.com/docs/functions/fluid-compute) is Vercel's new concurrency model for serverless functions, allowing them to handle multiple 
-requests per execution instead of spinning up a new instance for each request. This improves performance, 
-reduces cold starts, and optimizes resource usage, making serverless workloads more efficient.
-
-Follow this [guide](https://vercel.com/docs/functions/fluid-compute#how-to-enable-fluid-compute) to activate Fluid.
-
-## Makefile
-
-This project includes a `Makefile` that provides a set of commands to simplify everyday tasks such as starting the backend and frontend servers, running tests, building Docker containers, and more.
+### Applying Migrations
+```bash
+pnpm db:migrate
+```
 
 ### Available Commands
+- `pnpm db:migrate:status` - Check migration status
+- `pnpm db:migrate:history` - View migration history
+- `pnpm db:migrate:downgrade` - Rollback last migration
+- `pnpm db:migrate:reset` - Reset and reapply all migrations
 
-You can see all available commands and their descriptions by running the following command in your terminal:
+## Project Structure
 
-```bash
-make help
 ```
-
-## Important Considerations
-- **Environment Variables**: Ensure your `.env` files are up-to-date.
-- **Database Setup**: It is recommended to use Docker to run the database, even when running the backend and frontend locally, to simplify configuration and avoid potential conflicts.
-- **Consistency**: It is **not recommended** to switch between running the project locally and using Docker, as this may cause permission issues or unexpected problems. You can choose one method and stick with it.
+agent-management-software/
+├── backend/                    # FastAPI backend
+│   ├── app/
+│   │   ├── services/
+│   │   │   ├── agent/         # Agent implementations
+│   │   │   ├── chat/          # Chat services
+│   │   │   └── vapi/          # Phone integration
+│   │   ├── routes/            # API endpoints
+│   │   └── models/            # Database models
+│   ├── api/                   # Standalone API scripts
+│   ├── tests/                 # Test files
+│   └── alembic_migrations/    # Database migrations
+├── nextjs-frontend/           # Next.js frontend
+│   ├── app/                   # Next.js App Router
+│   ├── components/
+│   │   ├── trello/           # Task board components
+│   │   └── ui/               # UI components
+│   ├── lib/                  # Utility libraries
+│   └── hooks/                # React hooks
+├── local-shared-data/         # Shared data directory
+├── docker-compose.yml         # Database container
+├── Makefile                   # Development commands
+└── README.md                  # This file
+```
 
 ## Contributing
 
-If you wish to contribute to this project, please discuss the change you want to make via an [issue](https://github.com/vintasoftware/nextjs-fastapi-template/issues).
+This project was built for the Unaite & Hugging Face Hackathon. For development:
 
-Check our [contributing guide](https://github.com/vintasoftware/nextjs-fastapi-template/blob/main/CONTRIBUTING.md) to learn more about our development process and how you can test your changes to the boilerplate.
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/enhancement`
+3. Make your changes and test thoroughly
+4. Ensure all tests pass: `make test-backend && make test-frontend`
+5. Submit a pull request
 
-## Share your project!
+### Development Guidelines
 
-You can use our template to kick-start your project or streamline your efforts to secure funding. Starting with a strong foundation can make your product more resilient and allow you to focus on what matters most: delivering value to your customers.
+- Follow TypeScript/Python best practices
+- Add tests for new functionality
+- Update documentation as needed
+- Use meaningful commit messages
+- Test integrations with actual APIs when possible
 
-If our template has been part of your journey, we'd love to hear about it! Share your story with us, and we'll help spread the word about your project through our social media channels, giving it a broader reach.
+## License
 
-Please email us at contact@vintasoftware.com telling us more about how our template helped you boost your project.
-
-## Commercial Support
-
-[![alt text](https://avatars2.githubusercontent.com/u/5529080?s=80&v=4 "Vinta Logo")](https://www.vinta.com.br/)
-
-This project is maintained by [Vinta Software](https://www.vinta.com.br/) and is used in products of Vinta's clients. We are always looking for exciting work! If you need any commercial support, feel free to get in touch: contact@vinta.com.br
+This project is licensed under the MIT License. Built with ❤️ for the Unaite & Hugging Face Hackathon 2025.
