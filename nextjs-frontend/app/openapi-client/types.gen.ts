@@ -27,10 +27,10 @@ export type HTTPValidationError = {
 };
 
 /**
- * The final, structured response from our endpoint.
+ * The final response, containing a list of generated cards.
  */
 export type NewCardAgentResponse = {
-  card_data: NewCardData;
+  card_data: Array<NewCardData>;
   agent_id: string;
   execution_time: number;
   metadata: {
@@ -39,14 +39,21 @@ export type NewCardAgentResponse = {
 };
 
 /**
- * The structured data for our Kanban card. This is our target output.
+ * Defines the structure for a single task card, now with dependency tracking.
  */
 export type NewCardData = {
+  /**
+   * A unique temporary ID for this card within the response (e.g., 'task-1').
+   */
+  card_id: string;
   title: string;
   description: string;
   task_type: TaskType;
   status?: "todo";
-  parameters: ResearchParameters;
+  /**
+   * List of card_ids this card depends on.
+   */
+  dependencies?: Array<string>;
 };
 
 export type OutboundCallRequest = {
@@ -80,17 +87,9 @@ export type OutboundCallResponse = {
 };
 
 /**
- * Parameters for a research task. Pydantic validates this for us.
- */
-export type ResearchParameters = {
-  topics: Array<string>;
-  scope: string;
-};
-
-/**
  * The types of tasks our agent can create. Start with one, add more later.
  */
-export type TaskType = "research_task";
+export type TaskType = "reporting_task" | "research_task";
 
 export type ValidationError = {
   loc: Array<string | number>;

@@ -57,11 +57,11 @@ async def create_new_card_from_prompt(
         agent_request: AgentRequest,
 ):
         """
-        Takes a natural language prompt and uses a smolagent to create a
+        Takes a natural language promptand uses a smolagent to create a
         structured new task card.
         """
         if not agent_request.prompt or not agent_request.prompt.strip():
-            raise HTTPException(status_code=400, detail="Prompt cant be empty.")
+            raise HTTPException(status_code=400, detail="Prompt cannt be empty.")
 
         try:
             return await new_card_service.create_new_card_from_prompt(agent_request)
