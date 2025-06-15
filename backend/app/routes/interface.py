@@ -42,6 +42,8 @@ async def trigger_outbound_call(
     
     - **target_number**: Numéro de téléphone du destinataire (format E.164, ex: +33611421334)
     - **market_overview**: Texte de la Market Overview à résumer pendant l'appel
+    - **name**: Nom de la personne à qui on passe l'appel
+    - **action_to_take**: Action à entreprendre pendant l'appel
     """
     try:
         logger.info(f"Triggering owund call to {call_request.target_number}")
@@ -104,7 +106,9 @@ async def perform_deep_search(
 # Données de test
 #     test_data = {
 #         "target_number": "+33611421334",  # Ton numéro
-#         "market_overview": "The European ed-tech market grew 23% last year, with France and Germany leading demand in AI-powered language tools, while competition in the UK intensifies. New startups are emerging with innovative solutions for personalized learning."
+#         "market_overview": "The European ed-tech market grew 23% last year, with France and Germany leading demand in AI-powered language tools, while competition in the UK intensifies. New startups are emerging with innovative solutions for personalized learning.",
+#         "name": "Grégoire",
+#         "action_to_take": "Schedule a follow-up meeting to discuss potential partnership opportunities in the French market"
 #     }
 
 # response = requests.post(
