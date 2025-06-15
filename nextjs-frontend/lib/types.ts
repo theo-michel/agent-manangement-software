@@ -16,6 +16,7 @@ export interface TaskCard {
   assignees: User[];
   labels: TaskLabel[];
   status: "todo" | "doing" | "done";
+  containerId: string;
 }
 
 export interface TaskLabel {
@@ -28,4 +29,26 @@ export interface Column {
   id: string;
   title: string;
   cards: TaskCard[];
+}
+
+export interface DragEndEvent {
+  active: {
+    id: string;
+    data?: {
+      current?: {
+        containerId?: string;
+        index?: number;
+      };
+    };
+  };
+  over?: {
+    id: string;
+    data?: {
+      current?: {
+        containerId?: string;
+        accepts?: string[];
+        items?: string[];
+      };
+    };
+  };
 }

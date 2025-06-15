@@ -1,19 +1,181 @@
 "use client";
 
-import React from 'react';
-import { BoardColumn } from './board-column';
-import { mockColumns } from '@/lib/mock-data';
+import React, { useState, useCallback } from 'react';
+import { 
+  DndContext, 
+  DragEndEvent, 
+  DragOverlay, 
+  DragStartEvent, 
+  closestCorners,
+  PointerSensor,
+  useSensor,
+  useSensors
+} from '@dnd-kit/core';
+import { DroppableColumn } from './droppable-column';
+import { DraggableCard } from './draggable-card';
+import { CardDetailModal } from './card-detail-modal';
+import { mockColumns, mockUsers } from '@/lib/mock-data';
 import { Button } from '@/components/ui/button';
 import { Plus, Users, Star, Shield, Zap } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Column, TaskCard } from '@/lib/types';
 
 export function TrelloBoard() {
+  const [columns, setColumns] = useState<Column[]>(mockColumns);
+  const [activeCard, setActiveCard] = useState<TaskCard | null>(null);
+  const [selectedCard, setSelectedCard] = useState<TaskCard | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Configure sensors with activation constraints
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    })
+  );
+
   const teamMembers = [
     { name: 'Alice', initials: 'AJ', color: 'bg-blue-500' },
     { name: 'Bob', initials: 'BS', color: 'bg-green-500' },
     { name: 'Carol', initials: 'CD', color: 'bg-purple-500' },
     { name: 'David', initials: 'DW', color: 'bg-orange-500' },
   ];
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const { active } = event;
+    const card = active.data.current?.card as TaskCard;
+    setActiveCard(card);
+  }, []);
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveCard(null);
+
+    if (!over) return;
+
+    const activeCardId = active.id as string;
+    const overId = over.id as string;
+
+    // Find the active card and its current container
+    let activeCard: TaskCard | null = null;
+    let activeContainer: string | null = null;
+
+    for (const column of columns) {
+      const card = column.cards.find(c => c.id === activeCardId);
+      if (card) {
+        activeCard = card;
+        activeContainer = column.id;
+        break;
+      }
+    }
+
+    if (!activeCard || !activeContainer) return;
+
+    // Determine the target container
+    const targetContainer = overId;
+
+    // If dropping in the same container, no action needed for now
+    // (we could implement reordering within the same container later)
+    if (activeContainer === targetContainer) return;
+
+    // Move the card to the new container
+    setColumns(prevColumns => {
+      const newColumns = [...prevColumns];
+      
+      // Remove card from source container
+      const sourceColumnIndex = newColumns.findIndex(col => col.id === activeContainer);
+      const sourceColumn = { ...newColumns[sourceColumnIndex] };
+      sourceColumn.cards = sourceColumn.cards.filter(card => card.id !== activeCardId);
+      
+      // Add card to target container
+      const targetColumnIndex = newColumns.findIndex(col => col.id === targetContainer);
+      const targetColumn = { ...newColumns[targetColumnIndex] };
+      
+      // Update card's status and containerId
+      const updatedCard = {
+        ...activeCard!,
+        status: targetContainer as 'todo' | 'doing' | 'done',
+        containerId: targetContainer,
+      };
+      
+      targetColumn.cards = [...targetColumn.cards, updatedCard];
+      
+      // Update the columns array
+      newColumns[sourceColumnIndex] = sourceColumn;
+      newColumns[targetColumnIndex] = targetColumn;
+      
+      return newColumns;
+    });
+  }, [columns]);
+
+  const handleCardClick = useCallback((card: TaskCard) => {
+    setSelectedCard(card);
+    setIsModalOpen(true);
+  }, []);
+
+  const handleAddCard = useCallback((columnId: string) => {
+    const newCard: TaskCard = {
+      id: `card-${Date.now()}`,
+      title: '',
+      description: '',
+      status: columnId as 'todo' | 'doing' | 'done',
+      containerId: columnId,
+      assignees: [],
+      labels: [],
+      progress: 0,
+    };
+    setSelectedCard(newCard);
+    setIsModalOpen(true);
+  }, []);
+
+  const handleSaveCard = useCallback((updatedCard: TaskCard) => {
+    setColumns(prevColumns => {
+      const newColumns = [...prevColumns];
+      
+      // Check if this is a new card (no existing card with this ID)
+      const existingCardFound = newColumns.some(col => 
+        col.cards.some(card => card.id === updatedCard.id)
+      );
+
+      if (!existingCardFound) {
+        // Add new card
+        const targetColumnIndex = newColumns.findIndex(col => col.id === updatedCard.containerId);
+        if (targetColumnIndex !== -1) {
+          newColumns[targetColumnIndex] = {
+            ...newColumns[targetColumnIndex],
+            cards: [...newColumns[targetColumnIndex].cards, updatedCard]
+          };
+        }
+      } else {
+        // Update existing card
+        for (let i = 0; i < newColumns.length; i++) {
+          const cardIndex = newColumns[i].cards.findIndex(card => card.id === updatedCard.id);
+          if (cardIndex !== -1) {
+            newColumns[i] = {
+              ...newColumns[i],
+              cards: [
+                ...newColumns[i].cards.slice(0, cardIndex),
+                updatedCard,
+                ...newColumns[i].cards.slice(cardIndex + 1)
+              ]
+            };
+            break;
+          }
+        }
+      }
+      
+      return newColumns;
+    });
+    setIsModalOpen(false);
+    setSelectedCard(null);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setIsModalOpen(false);
+    setSelectedCard(null);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-400 to-red-400">
@@ -74,23 +236,53 @@ export function TrelloBoard() {
 
       {/* Board Content */}
       <main className="p-6">
-        <div className="flex gap-6 overflow-x-auto pb-4">
-          {mockColumns.map((column) => (
-            <BoardColumn key={column.id} column={column} />
-          ))}
-          
-          {/* Add Another List Button */}
-          <div className="flex-shrink-0">
-            <Button
-              variant="ghost"
-              className="w-80 h-12 bg-white/10 hover:bg-white/20 text-white border border-white/20 justify-start"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add another list
-            </Button>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="flex gap-6 overflow-x-auto pb-4">
+            {columns.map((column) => (
+              <DroppableColumn 
+                key={column.id} 
+                column={column}
+                onCardClick={handleCardClick}
+                onAddCard={handleAddCard}
+              />
+            ))}
+            
+            {/* Add Another List Button */}
+            <div className="flex-shrink-0">
+              <Button
+                variant="ghost"
+                className="w-80 h-12 bg-white/10 hover:bg-white/20 text-white border border-white/20 justify-start"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add another list
+              </Button>
+            </div>
           </div>
-        </div>
+
+          {/* Drag Overlay for smooth animation */}
+          <DragOverlay>
+            {activeCard ? (
+              <div className="rotate-3 scale-110 opacity-90 shadow-2xl">
+                <DraggableCard card={activeCard} />
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       </main>
+
+      {/* Card Detail Modal */}
+      <CardDetailModal
+        card={selectedCard}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onSave={handleSaveCard}
+        availableUsers={mockUsers}
+      />
     </div>
   );
 } 

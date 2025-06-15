@@ -1,4 +1,4 @@
-import '../src/app/globals.css'
+import './globals.css'
 
 export const metadata = {
   title: 'Agent Management Software',
