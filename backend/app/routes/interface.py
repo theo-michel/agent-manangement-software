@@ -61,7 +61,7 @@ async def create_new_card_from_prompt(
         structured new task card.
         """
         if not agent_request.prompt or not agent_request.prompt.strip():
-            raise HTTPException(status_code=400, detail="Prompt cannot be empty.")
+            raise HTTPException(status_code=400, detail="Prompt cant be empty.")
 
         try:
             return await new_card_service.process_prompt(agent_request)
