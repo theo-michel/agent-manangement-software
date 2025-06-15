@@ -73,13 +73,6 @@ export interface AICardSuggestion {
   priority?: "low" | "medium" | "high";
 }
 
-export interface AIResponse {
-  textualResponse: string; // Explanation from AI
-  cardsToCreate: AICardSuggestion[]; // Cards to auto-create
-  success: boolean;
-  error?: string;
-}
-
 export interface VapiCall {
   id: string;
   customer?: {
