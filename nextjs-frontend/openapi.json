@@ -421,7 +421,7 @@
       "TaskType": {
         "type": "string",
         "enum": [
-          "reporting_task",
+          "phone_task",
           "research_task"
         ],
         "title": "TaskType",

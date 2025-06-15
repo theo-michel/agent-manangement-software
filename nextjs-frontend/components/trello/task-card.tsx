@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { TaskCard as TaskCardType } from '@/lib/types';
-import { Calendar, MessageCircle, Paperclip, Loader2, Sparkles, Link, Bot, Clock } from 'lucide-react';
+import { Calendar, MessageCircle, Paperclip, Loader2, Sparkles, Link, Bot, Clock, Phone, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TaskCardProps {
@@ -27,6 +27,25 @@ export function TaskCard({ card, className }: TaskCardProps) {
     if (progress >= 100) return 'bg-green-500';
     if (progress >= 50) return 'bg-yellow-500';
     return 'bg-blue-500';
+  };
+
+  const getTaskTypeBadge = (taskType: string) => {
+    switch (taskType) {
+      case 'phone_task':
+        return {
+          icon: Phone,
+          label: 'Phone Call',
+          className: 'bg-emerald-100 text-emerald-700 border-emerald-200'
+        };
+      case 'research_task':
+        return {
+          icon: Search,
+          label: 'Research',
+          className: 'bg-indigo-100 text-indigo-700 border-indigo-200'
+        };
+      default:
+        return null;
+    }
   };
 
   return (
@@ -78,7 +97,22 @@ export function TaskCard({ card, className }: TaskCardProps) {
             </div>
             
             {/* Dependency and Auto-created indicators */}
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              {/* Task Type Badge */}
+              {card.aiMetadata?.taskType && (() => {
+                const taskTypeBadge = getTaskTypeBadge(card.aiMetadata.taskType);
+                if (taskTypeBadge) {
+                  const IconComponent = taskTypeBadge.icon;
+                  return (
+                    <Badge className={cn("text-xs", taskTypeBadge.className)}>
+                      <IconComponent className="w-3 h-3 mr-1" />
+                      {taskTypeBadge.label}
+                    </Badge>
+                  );
+                }
+                return null;
+              })()}
+              
               {card.autoCreated && (
                 <Badge className="text-xs bg-blue-100 text-blue-700 border-blue-200">
                   <Bot className="w-3 h-3 mr-1" />

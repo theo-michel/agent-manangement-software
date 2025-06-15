@@ -89,7 +89,7 @@ export type OutboundCallResponse = {
 /**
  * The types of tasks our agent can create. Start with one, add more later.
  */
-export type TaskType = "reporting_task" | "research_task";
+export type TaskType = "phone_task" | "research_task";
 
 export type ValidationError = {
   loc: Array<string | number>;
