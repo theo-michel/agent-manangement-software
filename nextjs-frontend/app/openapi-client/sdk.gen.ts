@@ -15,6 +15,9 @@ import type {
   CreateNewCardFromPromptData,
   CreateNewCardFromPromptError,
   CreateNewCardFromPromptResponse,
+  PerformDeepSearchData,
+  PerformDeepSearchError,
+  PerformDeepSearchResponse,
 } from "./types.gen";
 
 export const client = createClient(createConfig());
@@ -71,5 +74,23 @@ export const createNewCardFromPrompt = <ThrowOnError extends boolean = false>(
   >({
     ...options,
     url: "/chat/new-card",
+  });
+};
+
+/**
+ * Perform Deep Search
+ * Takes a prompt and uses a web-searching agent to find a
+ * comprehensive answer.
+ */
+export const performDeepSearch = <ThrowOnError extends boolean = false>(
+  options: OptionsLegacyParser<PerformDeepSearchData, ThrowOnError>,
+) => {
+  return (options?.client ?? client).post<
+    PerformDeepSearchResponse,
+    PerformDeepSearchError,
+    ThrowOnError
+  >({
+    ...options,
+    url: "/chat/deep-search",
   });
 };

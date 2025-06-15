@@ -130,6 +130,48 @@
           }
         }
       }
+    },
+    "/chat/deep-search": {
+      "post": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "Perform Deep Search",
+        "description": "Takes a prompt and uses a web-searching agent to find a\ncomprehensive answer.",
+        "operationId": "perform_deep_search",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

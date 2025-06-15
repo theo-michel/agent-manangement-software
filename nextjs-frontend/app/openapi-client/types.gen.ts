@@ -113,3 +113,11 @@ export type CreateNewCardFromPromptData = {
 export type CreateNewCardFromPromptResponse = NewCardAgentResponse;
 
 export type CreateNewCardFromPromptError = HTTPValidationError;
+
+export type PerformDeepSearchData = {
+  body: AgentRequest;
+};
+
+export type PerformDeepSearchResponse = AgentResponse;
+
+export type PerformDeepSearchError = HTTPValidationError;
