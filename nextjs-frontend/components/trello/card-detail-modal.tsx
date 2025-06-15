@@ -25,6 +25,8 @@ import {
   Save,
   X,
   Plus,
+  Sparkles,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -161,6 +163,37 @@ export function CardDetailModal({
                 </div>
               )}
             </div>
+
+            {/* AI Response */}
+            {(editedCard.aiResponse || editedCard.isLoading) && (
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block flex items-center gap-2">
+                  {editedCard.isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                  ) : (
+                    <Sparkles className="w-4 h-4 text-purple-600" />
+                  )}
+                  AI Response
+                </label>
+                {editedCard.isLoading ? (
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                      <span className="text-sm font-medium text-blue-700">Processing with AI...</span>
+                    </div>
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-purple-50 border border-purple-200 rounded-md">
+                    <p className="text-gray-700 whitespace-pre-wrap">{editedCard.aiResponse}</p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Progress */}
             <div>

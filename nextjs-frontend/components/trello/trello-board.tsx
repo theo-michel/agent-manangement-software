@@ -14,6 +14,7 @@ import {
 import { DroppableColumn } from './droppable-column';
 import { DraggableCard } from './draggable-card';
 import { CardDetailModal } from './card-detail-modal';
+import { triggerAgent } from '@/app/clientService';
 import { mockColumns, mockUsers } from '@/lib/mock-data';
 import { Button } from '@/components/ui/button';
 import { Plus, Users, Star, Shield, Zap } from 'lucide-react';
@@ -106,6 +107,37 @@ export function TrelloBoard() {
       newColumns[sourceColumnIndex] = sourceColumn;
       newColumns[targetColumnIndex] = targetColumn;
       
+      // If card moved to "done", trigger dependent cards
+      if (targetContainer === 'done') {
+        const todoColumnIndex = newColumns.findIndex(col => col.id === 'todo');
+        if (todoColumnIndex !== -1) {
+          // Find all cards that depend on this card
+          const dependentCards = newColumns[todoColumnIndex].cards.filter(card => 
+            card.dependsOn?.includes(activeCardId) || card.blockedBy?.includes(activeCardId)
+          );
+          
+          // Remove dependencies and move dependent cards to TODO if they have no other blockers
+          dependentCards.forEach(dependentCard => {
+            const cardIndex = newColumns[todoColumnIndex].cards.findIndex(c => c.id === dependentCard.id);
+            if (cardIndex !== -1) {
+              const updatedDependentCard = {
+                ...dependentCard,
+                dependsOn: dependentCard.dependsOn?.filter(id => id !== activeCardId) || [],
+                blockedBy: dependentCard.blockedBy?.filter(id => id !== activeCardId) || [],
+              };
+              
+              // If no more dependencies, the card is ready to work on
+              if (updatedDependentCard.dependsOn.length === 0 && updatedDependentCard.blockedBy.length === 0) {
+                // You could add visual indication here that the card is now ready
+                console.log(`Card "${dependentCard.title}" is now ready to work on!`);
+              }
+              
+              newColumns[todoColumnIndex].cards[cardIndex] = updatedDependentCard;
+            }
+          });
+        }
+      }
+      
       return newColumns;
     });
   }, [columns]);
@@ -130,7 +162,8 @@ export function TrelloBoard() {
     setIsModalOpen(true);
   }, []);
 
-  const handleSaveCard = useCallback((updatedCard: TaskCard) => {
+  const handleSaveCard = useCallback(async (updatedCard: TaskCard) => {
+    // First, save the card to state
     setColumns(prevColumns => {
       const newColumns = [...prevColumns];
       
@@ -168,9 +201,128 @@ export function TrelloBoard() {
       
       return newColumns;
     });
+
     setIsModalOpen(false);
     setSelectedCard(null);
-  }, []);
+
+    // If this is a new card with content, process it with AI
+    const isNewCard = !columns.some(col => 
+      col.cards.some(card => card.id === updatedCard.id)
+    );
+
+    if (isNewCard && updatedCard.title.trim()) {
+      // Create prompt from card content
+      const prompt = `Title: ${updatedCard.title}${updatedCard.description ? `\nDescription: ${updatedCard.description}` : ''}`;
+      
+      // Set loading state
+      setColumns(prevColumns => {
+        const newColumns = [...prevColumns];
+        const targetColumnIndex = newColumns.findIndex(col => col.id === updatedCard.containerId);
+        if (targetColumnIndex !== -1) {
+          const cardIndex = newColumns[targetColumnIndex].cards.findIndex(card => card.id === updatedCard.id);
+          if (cardIndex !== -1) {
+            newColumns[targetColumnIndex].cards[cardIndex] = {
+              ...newColumns[targetColumnIndex].cards[cardIndex],
+              isLoading: true
+            };
+          }
+        }
+        return newColumns;
+      });
+
+      try {
+        // Call AI endpoint
+        const aiResult = await triggerAgent({
+          prompt: prompt,
+          context: {
+            card: updatedCard
+          }
+        });
+        
+        if (aiResult.success) {
+          // Update original card with AI response and create new cards
+          setColumns(prevColumns => {
+            const newColumns = [...prevColumns];
+            
+            // Update original card with AI response
+            const targetColumnIndex = newColumns.findIndex(col => col.id === updatedCard.containerId);
+            if (targetColumnIndex !== -1) {
+              const cardIndex = newColumns[targetColumnIndex].cards.findIndex(card => card.id === updatedCard.id);
+              if (cardIndex !== -1) {
+                newColumns[targetColumnIndex].cards[cardIndex] = {
+                  ...newColumns[targetColumnIndex].cards[cardIndex],
+                  isLoading: false,
+                  aiResponse: aiResult.textualResponse
+                };
+              }
+            }
+            
+            // Create new cards from AI suggestions
+            const todoColumnIndex = newColumns.findIndex(col => col.id === 'todo');
+            if (todoColumnIndex !== -1 && aiResult.cardsToCreate.length > 0) {
+              const newCards = aiResult.cardsToCreate.map(suggestion => ({
+                id: `card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                title: suggestion.title,
+                description: suggestion.description,
+                status: 'todo' as const,
+                containerId: 'todo',
+                assignees: suggestion.assignees || [],
+                labels: suggestion.labels || [],
+                progress: 0,
+                dependsOn: suggestion.dependsOn || [],
+                blockedBy: suggestion.blockedBy || [],
+                isSubTask: suggestion.isSubTask || false,
+                parentTaskId: suggestion.parentTaskId,
+                autoCreated: true,
+                dueDate: suggestion.dueDate,
+              }));
+              
+              newColumns[todoColumnIndex] = {
+                ...newColumns[todoColumnIndex],
+                cards: [...newColumns[todoColumnIndex].cards, ...newCards]
+              };
+            }
+            
+            return newColumns;
+          });
+        } else {
+          // Handle AI error
+          setColumns(prevColumns => {
+            const newColumns = [...prevColumns];
+            const targetColumnIndex = newColumns.findIndex(col => col.id === updatedCard.containerId);
+            if (targetColumnIndex !== -1) {
+              const cardIndex = newColumns[targetColumnIndex].cards.findIndex(card => card.id === updatedCard.id);
+              if (cardIndex !== -1) {
+                newColumns[targetColumnIndex].cards[cardIndex] = {
+                  ...newColumns[targetColumnIndex].cards[cardIndex],
+                  isLoading: false,
+                  aiResponse: `Error: ${aiResult.error || 'Failed to get AI response'}`
+                };
+              }
+            }
+            return newColumns;
+          });
+        }
+      } catch (error) {
+        // Handle error
+        setColumns(prevColumns => {
+          const newColumns = [...prevColumns];
+          const targetColumnIndex = newColumns.findIndex(col => col.id === updatedCard.containerId);
+          if (targetColumnIndex !== -1) {
+            const cardIndex = newColumns[targetColumnIndex].cards.findIndex(card => card.id === updatedCard.id);
+            if (cardIndex !== -1) {
+              newColumns[targetColumnIndex].cards[cardIndex] = {
+                ...newColumns[targetColumnIndex].cards[cardIndex],
+                isLoading: false,
+                aiResponse: `Error: Failed to process with AI`
+              };
+            }
+          }
+          return newColumns;
+        });
+      }
+    }
+  }, [columns]);
 
   const handleCloseModal = useCallback(() => {
     setIsModalOpen(false);
