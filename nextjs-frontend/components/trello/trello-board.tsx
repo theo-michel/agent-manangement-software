@@ -15,14 +15,20 @@ import { DroppableColumn } from './droppable-column';
 import { DraggableCard } from './draggable-card';
 import { CardDetailModal } from './card-detail-modal';
 import { triggerAgent } from '@/app/clientService';
-import { mockColumns, mockUsers } from '@/lib/mock-data';
 import { Button } from '@/components/ui/button';
 import { Plus, Users, Star, Shield, Zap } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Column, TaskCard } from '@/lib/types';
+import { Column, TaskCard, AICardSuggestion, AIResponse } from '@/lib/types';
+
+// Initialize with empty columns
+const initialColumns: Column[] = [
+  { id: 'todo', title: 'To do', cards: [] },
+  { id: 'doing', title: 'Doing', cards: [] },
+  { id: 'done', title: 'Done', cards: [] },
+];
 
 export function TrelloBoard() {
-  const [columns, setColumns] = useState<Column[]>(mockColumns);
+  const [columns, setColumns] = useState<Column[]>(initialColumns);
   const [activeCard, setActiveCard] = useState<TaskCard | null>(null);
   const [selectedCard, setSelectedCard] = useState<TaskCard | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -232,7 +238,7 @@ export function TrelloBoard() {
 
       try {
         // Call AI endpoint
-        const aiResult = await triggerAgent({
+        const aiResult: AIResponse = await triggerAgent({
           prompt: prompt,
           context: {
             card: updatedCard
@@ -260,7 +266,7 @@ export function TrelloBoard() {
             // Create new cards from AI suggestions
             const todoColumnIndex = newColumns.findIndex(col => col.id === 'todo');
             if (todoColumnIndex !== -1 && aiResult.cardsToCreate.length > 0) {
-              const newCards = aiResult.cardsToCreate.map(suggestion => ({
+              const newCards = aiResult.cardsToCreate.map((suggestion: AICardSuggestion) => ({
                 id: `card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 title: suggestion.title,
                 description: suggestion.description,
@@ -433,7 +439,7 @@ export function TrelloBoard() {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onSave={handleSaveCard}
-        availableUsers={mockUsers}
+        availableUsers={[]}
       />
     </div>
   );
