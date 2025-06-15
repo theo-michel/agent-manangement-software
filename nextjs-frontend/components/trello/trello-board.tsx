@@ -993,7 +993,7 @@ export function TrelloBoard() {
                 <div className="w-8 h-8 bg-white rounded flex items-center justify-center">
                   <span className="text-purple-600 font-bold text-sm">A</span>
                 </div>
-                Project Team Spirit
+                Ekko
               </h1>
               <Star className="w-5 h-5 text-yellow-300 fill-current" />
               <Shield className="w-5 h-5 text-white/70" />
