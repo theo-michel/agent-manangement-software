@@ -14,13 +14,11 @@ import {
 import { DroppableColumn } from './droppable-column';
 import { DraggableCard } from './draggable-card';
 import { CardDetailModal } from './card-detail-modal';
-import { client } from '@/lib/clientConfig';
-import type { CreateNewCardFromPromptData, CreateNewCardFromPromptResponse } from '@/app/openapi-client/types.gen';
-import type { NewCardAgentResponse } from '@/app/openapi-client/types.gen';
 import { Button } from '@/components/ui/button';
 import { Plus, Users, Star, Shield, Zap } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Column, TaskCard } from '@/lib/types';
+import { createNewCardFromPrompt } from '@/app/clientService';
 
 // Initialize with empty columns
 const initialColumns: Column[] = [
@@ -240,8 +238,7 @@ export function TrelloBoard() {
 
             try {
         // Call AI endpoint
-        const response = await client.post<CreateNewCardFromPromptResponse>({
-          url: '/chat/new-card',
+        const response = await createNewCardFromPrompt({
           body: {
             prompt: prompt,
             context: {
@@ -249,7 +246,7 @@ export function TrelloBoard() {
             }
           }
         });
-
+        console.log("response hello:")
         console.log(response)
         
         
@@ -264,7 +261,7 @@ export function TrelloBoard() {
               newColumns[targetColumnIndex].cards[cardIndex] = {
                 ...newColumns[targetColumnIndex].cards[cardIndex],
                 isLoading: false,
-                aiResponse: `AI processed: ${response.data?.card_data.title || 'Unknown'} - ${response.data?.card_data.description || 'No description'}`
+                aiResponse: `AI processed: ${response.card_data.title} - ${response.card_data.description}`
               };
             }
           }
@@ -274,8 +271,8 @@ export function TrelloBoard() {
           if (todoColumnIndex !== -1) {
             const newCard: TaskCard = {
               id: `card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              title: response.data?.card_data.title || 'Untitled',
-              description: response.data?.card_data.description || '',
+              title: response.card_data.title,
+              description: response.card_data.description,
               status: 'todo' as const,
               containerId: 'todo',
               assignees: [],

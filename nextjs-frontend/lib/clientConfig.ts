@@ -1,10 +1,12 @@
-import { createClient, createConfig } from "@hey-api/client-axios";
+import { client } from "@/app/openapi-client/sdk.gen";
 
-// Create a properly configured client instance
-const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+const configureClient = () => {
+    // Use NEXT_PUBLIC prefix for client-side access
+    const baseURL = "http://localhost:8000";
 
-export const client = createClient(createConfig({
-  baseURL: baseURL,
-}));
+    client.setConfig({
+        baseURL: baseURL,
+    });
+};
 
-console.log('API Client configured with baseURL:', baseURL);
+configureClient();
