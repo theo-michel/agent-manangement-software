@@ -21,6 +21,8 @@ dependencies = [
     "langfuse>=2.60.4",
     "smolagents",
     "smolagents[toolkit]",
+    "vapi-server-sdk>=1.5.0",
+    "requests>=2.32.3",
 ]
 
 [dependency-groups]
