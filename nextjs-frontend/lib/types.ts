@@ -16,6 +16,17 @@ export interface AIMetadata {
   executionTime?: number;
 }
 
+export interface TaskExecution {
+  id: string;
+  taskId: string;
+  status: "pending" | "executing" | "completed" | "failed";
+  startedAt?: Date;
+  completedAt?: Date;
+  error?: string;
+  agentId?: string;
+  executionType: "ai_processing" | "web_search" | "phone_call";
+}
+
 export interface TaskCard {
   id: string;
   title: string;
@@ -34,8 +45,14 @@ export interface TaskCard {
   blockedBy?: string[]; // Array of task IDs that are blocking this task
   isSubTask?: boolean; // Whether this is a sub-task (dependent task)
   parentTaskId?: string; // ID of the parent task if this is a sub-task
+  subTaskIds?: string[]; // Array of sub-task IDs if this is a parent task
   autoCreated?: boolean; // Whether this card was auto-created by AI
   aiMetadata?: AIMetadata; // Metadata from AI processing
+  execution?: TaskExecution; // Current execution state
+  executionHistory?: TaskExecution[]; // History of all executions
+  createdAt?: Date;
+  updatedAt?: Date;
+  isParentTask?: boolean; // Whether this task has sub-tasks
 }
 
 export interface TaskLabel {

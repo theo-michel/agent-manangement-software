@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { 
   DndContext, 
   DragEndEvent, 
@@ -19,8 +19,9 @@ import { Plus, Users, Star, Shield, Zap, Phone, Search } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Column, TaskCard } from '@/lib/types';
+import { Column, TaskCard, TaskExecution } from '@/lib/types';
 import { createNewCardFromPrompt, NewCardAgentResponse } from '@/app/clientService';
+import { taskExecutionService } from '@/lib/task-execution-service';
 
 // Initialize with empty columns
 const initialColumns: Column[] = [
@@ -36,7 +37,247 @@ export function TrelloBoard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [phoneCallsEnabled, setPhoneCallsEnabled] = useState(true);
   const [webSearchEnabled, setWebSearchEnabled] = useState(true);
+  const [executingTasks, setExecutingTasks] = useState<Map<string, TaskExecution>>(new Map());
   
+  // Subscribe to execution service updates
+  useEffect(() => {
+    const unsubscribe = taskExecutionService.subscribe((tasks) => {
+      setExecutingTasks(tasks);
+    });
+    return unsubscribe;
+  }, []);
+
+  // Automated card movement functions
+  const moveCardToColumn = useCallback((cardId: string, targetColumn: 'todo' | 'doing' | 'done') => {
+    setColumns(prevColumns => {
+      const newColumns = [...prevColumns];
+      
+      // Find the card in any column
+      let sourceColumnIndex = -1;
+      let cardIndex = -1;
+      let card: TaskCard | null = null;
+      
+      for (let i = 0; i < newColumns.length; i++) {
+        cardIndex = newColumns[i].cards.findIndex(c => c.id === cardId);
+        if (cardIndex !== -1) {
+          sourceColumnIndex = i;
+          card = newColumns[i].cards[cardIndex];
+          break;
+        }
+      }
+      
+      if (!card || sourceColumnIndex === -1) return prevColumns;
+      
+      // Remove card from source column
+      newColumns[sourceColumnIndex].cards.splice(cardIndex, 1);
+      
+      // Add card to target column
+      const targetColumnIndex = newColumns.findIndex(col => col.id === targetColumn);
+      if (targetColumnIndex !== -1) {
+        const updatedCard = {
+          ...card,
+          status: targetColumn,
+          containerId: targetColumn,
+          updatedAt: new Date(),
+        };
+        newColumns[targetColumnIndex].cards.push(updatedCard);
+      }
+      
+      return newColumns;
+    });
+  }, []);
+
+  const startTaskExecution = useCallback((cardId: string, executionType: TaskExecution['executionType']) => {
+    // Move card to Doing column
+    moveCardToColumn(cardId, 'doing');
+    
+    // Start execution tracking
+    const executionId = taskExecutionService.startExecution(cardId, executionType);
+    
+    console.log(`🚀 Started ${executionType} execution for task ${cardId}`);
+    return executionId;
+  }, [moveCardToColumn]);
+
+  // Check if all sub-tasks of a parent are completed and update parent accordingly
+  const checkParentTaskCompletion = useCallback((parentTaskId: string) => {
+    setColumns(prevColumns => {
+      const newColumns = [...prevColumns];
+      let parentCard: TaskCard | null = null;
+      let parentColumnIndex = -1;
+      let parentCardIndex = -1;
+
+      // Find the parent task
+      for (let colIndex = 0; colIndex < newColumns.length; colIndex++) {
+        const cardIndex = newColumns[colIndex].cards.findIndex(card => card.id === parentTaskId);
+        if (cardIndex !== -1) {
+          parentCard = newColumns[colIndex].cards[cardIndex];
+          parentColumnIndex = colIndex;
+          parentCardIndex = cardIndex;
+          break;
+        }
+      }
+
+      if (!parentCard || !parentCard.subTaskIds || parentCard.subTaskIds.length === 0) {
+        return prevColumns;
+      }
+
+      // Count completed sub-tasks
+      let completedSubTasks = 0;
+      const totalSubTasks = parentCard.subTaskIds.length;
+      
+      // Check each sub-task status across all columns
+      for (const subTaskId of parentCard.subTaskIds) {
+        for (const column of newColumns) {
+          const subTask = column.cards.find(card => card.id === subTaskId);
+          if (subTask && subTask.status === 'done') {
+            completedSubTasks++;
+            break;
+          }
+        }
+      }
+
+      // Calculate progress percentage
+      const progress = Math.round((completedSubTasks / totalSubTasks) * 100);
+      
+      // Update parent task progress
+      const updatedParentCard = {
+        ...parentCard,
+        progress,
+        updatedAt: new Date(),
+      };
+
+      // If all sub-tasks are completed, move parent to Done
+      if (completedSubTasks === totalSubTasks && parentCard.status !== 'done') {
+        // Remove from current column
+        newColumns[parentColumnIndex].cards.splice(parentCardIndex, 1);
+        
+        // Add to Done column
+        const doneColumnIndex = newColumns.findIndex(col => col.id === 'done');
+        if (doneColumnIndex !== -1) {
+          updatedParentCard.status = 'done';
+          updatedParentCard.containerId = 'done';
+          updatedParentCard.aiResponse = `All ${totalSubTasks} sub-tasks completed! 🎉`;
+          newColumns[doneColumnIndex].cards.push(updatedParentCard);
+          
+          console.log(`🎉 Parent task "${parentCard.title}" completed - all sub-tasks done!`);
+        }
+      } else {
+        // Update progress in current column
+        newColumns[parentColumnIndex].cards[parentCardIndex] = updatedParentCard;
+      }
+
+            return newColumns;
+    });
+  }, []);
+
+  const completeTaskExecution = useCallback((cardId: string, result?: any) => {
+    // Complete execution tracking
+    taskExecutionService.completeExecution(cardId, result);
+    
+    // Move card to Done column
+    moveCardToColumn(cardId, 'done');
+    
+    // Check if this is a sub-task and update parent if needed
+    setColumns(prevColumns => {
+      // Find the card to check if it's a sub-task
+      for (const column of prevColumns) {
+        const card = column.cards.find(c => c.id === cardId);
+        if (card && card.isSubTask && card.parentTaskId) {
+          // Trigger parent completion check after state update
+          setTimeout(() => checkParentTaskCompletion(card.parentTaskId!), 0);
+          break;
+        }
+      }
+      return prevColumns;
+    });
+    
+    console.log(`✅ Completed execution for task ${cardId}`);
+  }, [moveCardToColumn, checkParentTaskCompletion]);
+
+  const failTaskExecution = useCallback((cardId: string, error: string) => {
+    // Mark execution as failed
+    taskExecutionService.failExecution(cardId, error);
+    
+    // Move card back to Todo column for retry
+    moveCardToColumn(cardId, 'todo');
+    
+    console.log(`❌ Failed execution for task ${cardId}: ${error}`);
+  }, [moveCardToColumn]);
+
+  // Execute sub-tasks sequentially (one after another)
+  const executeSubTasksSequentially = useCallback(async (subTaskIds: string[]) => {
+    console.log(`🚀 Starting sequential execution of ${subTaskIds.length} sub-tasks`);
+    
+    for (let i = 0; i < subTaskIds.length; i++) {
+      const subTaskId = subTaskIds[i];
+      
+      try {
+        // Find the sub-task
+        let subTask: TaskCard | undefined;
+        
+        // Get current columns state to find the sub-task
+        const currentColumns = columns;
+        for (const column of currentColumns) {
+          const foundTask = column.cards.find(card => card.id === subTaskId);
+          if (foundTask) {
+            subTask = foundTask;
+            break;
+          }
+        }
+
+        if (!subTask) {
+          console.error(`Sub-task ${subTaskId} not found`);
+          continue;
+        }
+
+        console.log(`⚡ Executing sub-task ${i + 1}/${subTaskIds.length}: "${subTask.title}"`);
+        
+        // Start execution for this sub-task
+        const executionId = startTaskExecution(subTaskId, 'ai_processing');
+        
+        // Create prompt from sub-task content
+        const prompt = `Title: ${subTask.title}${subTask.description ? `\nDescription: ${subTask.description}` : ''}`;
+        
+        // Call AI API for this specific sub-task
+        const response = await fetch('/api/new-card', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            prompt,
+            phoneCallsEnabled,
+            webSearchEnabled,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log(`✅ Sub-task "${subTask.title}" completed:`, result);
+        
+        // Complete the sub-task execution
+        completeTaskExecution(subTaskId, result);
+        
+        // Add a small delay between executions
+        if (i < subTaskIds.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+        
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to execute sub-task';
+        console.error(`❌ Sub-task "${subTaskId}" failed:`, errorMessage);
+        
+        // Fail the sub-task execution
+        failTaskExecution(subTaskId, errorMessage);
+      }
+    }
+    
+    console.log(`🎉 Completed sequential execution of all sub-tasks`);
+  }, [columns, startTaskExecution, completeTaskExecution, failTaskExecution, phoneCallsEnabled, webSearchEnabled]);
+   
   // Configure sensors with activation constraints
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -112,7 +353,7 @@ export function TrelloBoard() {
       newColumns[sourceColumnIndex] = sourceColumn;
       newColumns[targetColumnIndex] = targetColumn;
       
-      // If card moved to "done", trigger dependent cards
+      // If card moved to "done", trigger dependent cards and check parent completion
       if (targetContainer === 'done') {
         const todoColumnIndex = newColumns.findIndex(col => col.id === 'todo');
         if (todoColumnIndex !== -1) {
@@ -140,6 +381,12 @@ export function TrelloBoard() {
               newColumns[todoColumnIndex].cards[cardIndex] = updatedDependentCard;
             }
           });
+        }
+
+        // If this is a sub-task that was completed, check parent task completion
+        if (activeCard.isSubTask && activeCard.parentTaskId) {
+          // We need to trigger this after the state update, so we'll do it in a setTimeout
+          setTimeout(() => checkParentTaskCompletion(activeCard.parentTaskId!), 0);
         }
       }
       
@@ -225,23 +472,34 @@ export function TrelloBoard() {
       // Create prompt from card content
       const prompt = `Title: ${updatedCard.title}${updatedCard.description ? `\nDescription: ${updatedCard.description}` : ''}`;
       
-      // Set loading state
+      // Start AI execution and move parent task to Doing
+      const executionId = startTaskExecution(updatedCard.id, 'ai_processing');
+      
+      // Update parent task in Doing column with execution metadata
       setColumns(prevColumns => {
         const newColumns = [...prevColumns];
-        const targetColumnIndex = newColumns.findIndex(col => col.id === updatedCard.containerId);
-        if (targetColumnIndex !== -1) {
-          const cardIndex = newColumns[targetColumnIndex].cards.findIndex(card => card.id === updatedCard.id);
+        const doingColumnIndex = newColumns.findIndex(col => col.id === 'doing');
+        if (doingColumnIndex !== -1) {
+          const cardIndex = newColumns[doingColumnIndex].cards.findIndex(card => card.id === updatedCard.id);
           if (cardIndex !== -1) {
-            newColumns[targetColumnIndex].cards[cardIndex] = {
-              ...newColumns[targetColumnIndex].cards[cardIndex],
-              isLoading: true
+            newColumns[doingColumnIndex].cards[cardIndex] = {
+              ...newColumns[doingColumnIndex].cards[cardIndex],
+              isLoading: true,
+              isParentTask: true, // Mark as parent task
+              execution: {
+                id: executionId,
+                taskId: updatedCard.id,
+                status: 'executing',
+                startedAt: new Date(),
+                executionType: 'ai_processing'
+              }
             };
           }
         }
         return newColumns;
       });
 
-            try {
+      try {
         // Call AI endpoint
         const axiosResponse = await createNewCardFromPrompt({
           body: {
@@ -259,65 +517,89 @@ export function TrelloBoard() {
         const response: NewCardAgentResponse = axiosResponse.data;
         console.log("AI Response:", response);
         
+        // Update parent task and create sub-tasks
         setColumns(prevColumns => {
           const newColumns = [...prevColumns];
+          const todoColumnIndex = newColumns.findIndex(col => col.id === 'todo');
+          const doingColumnIndex = newColumns.findIndex(col => col.id === 'doing');
           
-          // Update original card to show it was processed
-          const targetColumnIndex = newColumns.findIndex(col => col.id === updatedCard.containerId);
-          if (targetColumnIndex !== -1) {
-            const cardIndex = newColumns[targetColumnIndex].cards.findIndex(card => card.id === updatedCard.id);
-            if (cardIndex !== -1) {
-              const cardCount = Array.isArray(response.card_data) ? response.card_data.length : 0;
-              newColumns[targetColumnIndex].cards[cardIndex] = {
-                ...newColumns[targetColumnIndex].cards[cardIndex],
+          if (todoColumnIndex !== -1 && doingColumnIndex !== -1 && response.card_data && Array.isArray(response.card_data)) {
+            // Create sub-tasks from AI response
+            const subTaskIds: string[] = [];
+            const newCards: TaskCard[] = response.card_data.map((cardData: any, index: number) => {
+              const subTaskId = `card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${index}`;
+              subTaskIds.push(subTaskId);
+              
+              return {
+                id: subTaskId,
+                title: cardData.title || 'AI Generated Task',
+                description: cardData.description || 'Generated by AI',
+                status: 'todo' as const,
+                containerId: 'todo',
+                assignees: [],
+                labels: cardData.task_type ? [cardData.task_type] : [],
+                progress: 0,
+                autoCreated: true,
+                createdAt: new Date(),
+                isSubTask: true,
+                parentTaskId: updatedCard.id,
+                aiMetadata: {
+                  taskType: cardData.task_type,
+                  parameters: cardData.parameters,
+                  agentId: response.agent_id,
+                  executionTime: response.execution_time
+                }
+              };
+            });
+
+            // Update parent task with sub-task references (stays in Doing)
+            const parentCardIndex = newColumns[doingColumnIndex].cards.findIndex(card => card.id === updatedCard.id);
+            if (parentCardIndex !== -1) {
+              const cardCount = subTaskIds.length;
+              newColumns[doingColumnIndex].cards[parentCardIndex] = {
+                ...newColumns[doingColumnIndex].cards[parentCardIndex],
                 isLoading: false,
-                aiResponse: `AI processed and created ${cardCount} tasks (${response.execution_time?.toFixed(2)}s)`
+                subTaskIds,
+                aiResponse: `AI created ${cardCount} sub-tasks - executing them now...`,
+                progress: 0, // 0% complete until sub-tasks are done
+                execution: {
+                  ...newColumns[doingColumnIndex].cards[parentCardIndex].execution!,
+                  status: 'executing' // Still executing (waiting for sub-tasks)
+                }
               };
             }
-          }
-          
-          // Create new cards based on AI response in TODO column
-          const todoColumnIndex = newColumns.findIndex(col => col.id === 'todo');
-          if (todoColumnIndex !== -1 && response.card_data && Array.isArray(response.card_data)) {
-            // Create multiple cards from the AI response
-            const newCards: TaskCard[] = response.card_data.map((cardData: any, index: number) => ({
-              id: `card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${index}`,
-              title: cardData.title || 'AI Generated Task',
-              description: cardData.description || 'Generated by AI',
-              status: 'todo' as const,
-              containerId: 'todo',
-              assignees: [],
-              labels: cardData.task_type ? [cardData.task_type] : [],
-              progress: 0,
-              autoCreated: true,
-              aiMetadata: {
-                taskType: cardData.task_type,
-                parameters: cardData.parameters,
-                agentId: response.agent_id,
-                executionTime: response.execution_time
-              }
-            }));
             
+            // Add sub-tasks to Todo column
             newColumns[todoColumnIndex] = {
               ...newColumns[todoColumnIndex],
               cards: [...newColumns[todoColumnIndex].cards, ...newCards]
             };
+
+            // Start automatic execution of sub-tasks
+            setTimeout(() => {
+              executeSubTasksSequentially(subTaskIds);
+            }, 1000); // Small delay to let UI update
           }
           
           return newColumns;
         });
       } catch (error) {
-        // Handle error
+        // Handle AI processing error - move parent task back to Todo
+        const errorMessage = error instanceof Error ? error.message : 'Failed to process with AI';
+        
+        // Fail the execution and move back to Todo
+        failTaskExecution(updatedCard.id, errorMessage);
+        
         setColumns(prevColumns => {
           const newColumns = [...prevColumns];
-          const targetColumnIndex = newColumns.findIndex(col => col.id === updatedCard.containerId);
-          if (targetColumnIndex !== -1) {
-            const cardIndex = newColumns[targetColumnIndex].cards.findIndex(card => card.id === updatedCard.id);
+          const todoColumnIndex = newColumns.findIndex(col => col.id === 'todo');
+          if (todoColumnIndex !== -1) {
+            const cardIndex = newColumns[todoColumnIndex].cards.findIndex(card => card.id === updatedCard.id);
             if (cardIndex !== -1) {
-              newColumns[targetColumnIndex].cards[cardIndex] = {
-                ...newColumns[targetColumnIndex].cards[cardIndex],
+              newColumns[todoColumnIndex].cards[cardIndex] = {
+                ...newColumns[todoColumnIndex].cards[cardIndex],
                 isLoading: false,
-                aiResponse: `Error: Failed to process with AI`
+                aiResponse: `Error: ${errorMessage}`,
               };
             }
           }
