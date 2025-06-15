@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.app.routes.interface import router as chat_router
-from backend.app.utils import simple_generate_unique_route_id
+from app.routes.interface import router as chat_router
+from app.utils import simple_generate_unique_route_id
 from app.config import settings
 
 app = FastAPI(

@@ -5,1041 +5,23 @@
     "version": "0.1.0"
   },
   "paths": {
-    "/auth/jwt/login": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Auth:Jwt.Login",
-        "operationId": "auth:jwt.login",
-        "requestBody": {
-          "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "$ref": "#/components/schemas/login"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BearerResponse"
-                },
-                "example": {
-                  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoiOTIyMWZmYzktNjQwZi00MzcyLTg2ZDMtY2U2NDJjYmE1NjAzIiwiYXVkIjoiZmFzdGFwaS11c2VyczphdXRoIiwiZXhwIjoxNTcxNTA0MTkzfQ.M10bjOe45I5Ncu_uXvOmVV8QxnL-nZfcH96U90JaocI",
-                  "token_type": "bearer"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorModel"
-                },
-                "examples": {
-                  "LOGIN_BAD_CREDENTIALS": {
-                    "summary": "Bad credentials or the user is inactive.",
-                    "value": {
-                      "detail": "LOGIN_BAD_CREDENTIALS"
-                    }
-                  },
-                  "LOGIN_USER_NOT_VERIFIED": {
-                    "summary": "The user is not verified.",
-                    "value": {
-                      "detail": "LOGIN_USER_NOT_VERIFIED"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/jwt/logout": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Auth:Jwt.Logout",
-        "operationId": "auth:jwt.logout",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "401": {
-            "description": "Missing token or inactive user."
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/auth/register": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Register:Register",
-        "operationId": "register:register",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserRead"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorModel"
-                },
-                "examples": {
-                  "REGISTER_USER_ALREADY_EXISTS": {
-                    "summary": "A user with this email already exists.",
-                    "value": {
-                      "detail": "REGISTER_USER_ALREADY_EXISTS"
-                    }
-                  },
-                  "REGISTER_INVALID_PASSWORD": {
-                    "summary": "Password validation failed.",
-                    "value": {
-                      "detail": {
-                        "code": "REGISTER_INVALID_PASSWORD",
-                        "reason": "Password should beat least 3 characters"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/forgot-password": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Reset:Forgot Password",
-        "operationId": "reset:forgot_password",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_auth-reset_forgot_password"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "202": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/reset-password": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Reset:Reset Password",
-        "operationId": "reset:reset_password",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_auth-reset_reset_password"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorModel"
-                },
-                "examples": {
-                  "RESET_PASSWORD_BAD_TOKEN": {
-                    "summary": "Bad or expired token.",
-                    "value": {
-                      "detail": "RESET_PASSWORD_BAD_TOKEN"
-                    }
-                  },
-                  "RESET_PASSWORD_INVALID_PASSWORD": {
-                    "summary": "Password validation failed.",
-                    "value": {
-                      "detail": {
-                        "code": "RESET_PASSWORD_INVALID_PASSWORD",
-                        "reason": "Password should be at least 3 characters"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/request-verify-token": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Verify:Request-Token",
-        "operationId": "verify:request-token",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_auth-verify_request-token"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "202": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/verify": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "Verify:Verify",
-        "operationId": "verify:verify",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_auth-verify_verify"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserRead"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorModel"
-                },
-                "examples": {
-                  "VERIFY_USER_BAD_TOKEN": {
-                    "summary": "Bad token, not existing user ornot the e-mail currently set for the user.",
-                    "value": {
-                      "detail": "VERIFY_USER_BAD_TOKEN"
-                    }
-                  },
-                  "VERIFY_USER_ALREADY_VERIFIED": {
-                    "summary": "The user is already verified.",
-                    "value": {
-                      "detail": "VERIFY_USER_ALREADY_VERIFIED"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/users/me": {
-      "get": {
-        "tags": [
-          "users"
-        ],
-        "summary": "Users:Current User",
-        "operationId": "users:current_user",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserRead"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing token or inactive user."
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      },
-      "patch": {
-        "tags": [
-          "users"
-        ],
-        "summary": "Users:Patch Current User",
-        "operationId": "users:patch_current_user",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserUpdate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserRead"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing token or inactive user."
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorModel"
-                },
-                "examples": {
-                  "UPDATE_USER_EMAIL_ALREADY_EXISTS": {
-                    "summary": "A user with this email already exists.",
-                    "value": {
-                      "detail": "UPDATE_USER_EMAIL_ALREADY_EXISTS"
-                    }
-                  },
-                  "UPDATE_USER_INVALID_PASSWORD": {
-                    "summary": "Password validation failed.",
-                    "value": {
-                      "detail": {
-                        "code": "UPDATE_USER_INVALID_PASSWORD",
-                        "reason": "Password should beat least 3 characters"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/users/{id}": {
-      "get": {
-        "tags": [
-          "users"
-        ],
-        "summary": "Users:User",
-        "operationId": "users:user",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserRead"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing token or inactive user."
-          },
-          "403": {
-            "description": "Not a superuser."
-          },
-          "404": {
-            "description": "The user does not exist."
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "users"
-        ],
-        "summary": "Users:Patch User",
-        "operationId": "users:patch_user",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UserUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserRead"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Missing token or inactive user."
-          },
-          "403": {
-            "description": "Not a superuser."
-          },
-          "404": {
-            "description": "The user does not exist."
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "examples": {
-                  "UPDATE_USER_EMAIL_ALREADY_EXISTS": {
-                    "summary": "A user with this email already exists.",
-                    "value": {
-                      "detail": "UPDATE_USER_EMAIL_ALREADY_EXISTS"
-                    }
-                  },
-                  "UPDATE_USER_INVALID_PASSWORD": {
-                    "summary": "Password validation failed.",
-                    "value": {
-                      "detail": {
-                        "code": "UPDATE_USER_INVALID_PASSWORD",
-                        "reason": "Password should beat least 3 characters"
-                      }
-                    }
-                  }
-                },
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorModel"
-                }
-              }
-            },
-            "description": "Bad Request"
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "users"
-        ],
-        "summary": "Users:Delete User",
-        "operationId": "users:delete_user",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Id"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "401": {
-            "description": "Missing token or inactive user."
-          },
-          "403": {
-            "description": "Not a superuser."
-          },
-          "404": {
-            "description": "The user does not exist."
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/items/": {
-      "get": {
-        "tags": [
-          "item"
-        ],
-        "summary": "Read Item",
-        "operationId": "read_item",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/ItemRead"
-                  },
-                  "type": "array",
-                  "title": "Response Item-Read Item"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      },
-      "post": {
-        "tags": [
-          "item"
-        ],
-        "summary": "Create Item",
-        "operationId": "create_item",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ItemCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ItemRead"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ]
-      }
-    },
-    "/items/{item_id}": {
-      "delete": {
-        "tags": [
-          "item"
-        ],
-        "summary": "Delete Item",
-        "operationId": "delete_item",
-        "security": [
-          {
-            "OAuth2PasswordBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "item_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Item Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/repos/{owner}/{repo}/status": {
-      "get": {
-        "tags": [
-          "repository"
-        ],
-        "summary": "Get Repository Status",
-        "description": "Check the indexing status of a repository.",
-        "operationId": "get_repository_status",
-        "parameters": [
-          {
-            "name": "owner",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Owner"
-            }
-          },
-          {
-            "name": "repo",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Repo"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RepositoryStatusResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/repos/{owner}/{repo}/index": {
-      "post": {
-        "tags": [
-          "repository"
-        ],
-        "summary": "Index Repository",
-        "description": "Start the indexing process for a repository.\nCreates a Stripe checkout session for payment and saves results to database.",
-        "operationId": "index_repository",
-        "parameters": [
-          {
-            "name": "owner",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Owner"
-            }
-          },
-          {
-            "name": "repo",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Repo"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CheckoutResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/repos/{owner}/{repo}/docs": {
-      "get": {
-        "tags": [
-          "repository"
-        ],
-        "summary": "Get Repository Docs",
-        "description": "Get documentation for a repository.",
-        "operationId": "get_repository_docs",
-        "parameters": [
-          {
-            "name": "owner",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Owner"
-            }
-          },
-          {
-            "name": "repo",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Repo"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DocsResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/repos/{owner}/{repo}/info": {
-      "get": {
-        "tags": [
-          "repository"
-        ],
-        "summary": "Get Github Repo Info",
-        "description": "Get basic information about a GitHub repository.",
-        "operationId": "get_github_repo_info",
-        "parameters": [
-          {
-            "name": "owner",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Owner"
-            }
-          },
-          {
-            "name": "repo",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Repo"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RepositoryInfo"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/chat/{owner}/{repo}": {
+    "/chat/agent": {
       "post": {
         "tags": [
           "chat"
         ],
-        "summary": "Chat With Repository",
-        "description": "Chat with a repository using AI-powered understanding of the codebase.",
-        "operationId": "chat_with_repository",
-        "parameters": [
-          {
-            "name": "owner",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Owner"
-            }
-          },
-          {
-            "name": "repo",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Repo"
-            }
-          }
-        ],
+        "summary": "Trigger Agent",
+        "description": "Simple mock endpoint that takes a prompt and triggers an agent.",
+        "operationId": "trigger_agent",
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ChatRequest"
+                "$ref": "#/components/schemas/AgentRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -1047,7 +29,91 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ChatResponse"
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/outbound-call": {
+      "post": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "Trigger Outbound Call",
+        "description": "D\u00e9clenche un appel sortant avec une Market Overview.\n\n- **target_number**: Num\u00e9ro de t\u00e9l\u00e9phone du destinataire (format E.164, ex: +33611421334)\n- **market_overview**: Texte de la Market Overview \u00e0 r\u00e9sumer pendant l'appel",
+        "operationId": "trigger_outbound_call",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutboundCallRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutboundCallResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/chat/new-card": {
+      "post": {
+        "tags": [
+          "chat"
+        ],
+        "summary": "Create New Card From Prompt",
+        "description": "Takes a natural language prompt and uses a smolagent to create a\nstructured new task card.",
+        "operationId": "create_new_card_from_prompt",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewCardAgentResponse"
                 }
               }
             }
@@ -1068,88 +134,11 @@
   },
   "components": {
     "schemas": {
-      "BearerResponse": {
+      "AgentRequest": {
         "properties": {
-          "access_token": {
+          "prompt": {
             "type": "string",
-            "title": "Access Token"
-          },
-          "token_type": {
-            "type": "string",
-            "title": "Token Type"
-          }
-        },
-        "type": "object",
-        "required": [
-          "access_token",
-          "token_type"
-        ],
-        "title": "BearerResponse"
-      },
-      "Body_auth-reset_forgot_password": {
-        "properties": {
-          "email": {
-            "type": "string",
-            "format": "email",
-            "title": "Email"
-          }
-        },
-        "type": "object",
-        "required": [
-          "email"
-        ],
-        "title": "Body_auth-reset:forgot_password"
-      },
-      "Body_auth-reset_reset_password": {
-        "properties": {
-          "token": {
-            "type": "string",
-            "title": "Token"
-          },
-          "password": {
-            "type": "string",
-            "title": "Password"
-          }
-        },
-        "type": "object",
-        "required": [
-          "token",
-          "password"
-        ],
-        "title": "Body_auth-reset:reset_password"
-      },
-      "Body_auth-verify_request-token": {
-        "properties": {
-          "email": {
-            "type": "string",
-            "format": "email",
-            "title": "Email"
-          }
-        },
-        "type": "object",
-        "required": [
-          "email"
-        ],
-        "title": "Body_auth-verify:request-token"
-      },
-      "Body_auth-verify_verify": {
-        "properties": {
-          "token": {
-            "type": "string",
-            "title": "Token"
-          }
-        },
-        "type": "object",
-        "required": [
-          "token"
-        ],
-        "title": "Body_auth-verify:verify"
-      },
-      "ChatRequest": {
-        "properties": {
-          "message": {
-            "type": "string",
-            "title": "Message"
+            "title": "Prompt"
           },
           "context": {
             "anyOf": [
@@ -1165,140 +154,45 @@
         },
         "type": "object",
         "required": [
-          "message"
+          "prompt"
         ],
-        "title": "ChatRequest"
+        "title": "AgentRequest",
+        "description": "Generic request for any agent that takes a simple prompt."
       },
-      "ChatResponse": {
+      "AgentResponse": {
         "properties": {
           "response": {
             "type": "string",
             "title": "Response"
           },
-          "code_snippets": {
-            "items": {
-              "type": "object"
-            },
-            "type": "array",
-            "title": "Code Snippets"
-          },
-          "source_files": {
-            "items": {
-              "additionalProperties": {
-                "type": "string"
-              },
-              "type": "object"
-            },
-            "type": "array",
-            "title": "Source Files"
-          }
-        },
-        "type": "object",
-        "required": [
-          "response"
-        ],
-        "title": "ChatResponse"
-      },
-      "CheckoutResponse": {
-        "properties": {
-          "cache_name": {
+          "agent_id": {
             "type": "string",
-            "title": "Cache Name"
-          }
-        },
-        "type": "object",
-        "required": [
-          "cache_name"
-        ],
-        "title": "CheckoutResponse"
-      },
-      "DocsResponse": {
-        "properties": {
-          "repository": {
-            "$ref": "#/components/schemas/RepositoryInfo"
+            "title": "Agent Id"
           },
-          "files": {
-            "items": {
-              "$ref": "#/components/schemas/FileDescription"
-            },
-            "type": "array",
-            "title": "Files"
-          }
-        },
-        "type": "object",
-        "required": [
-          "repository",
-          "files"
-        ],
-        "title": "DocsResponse"
-      },
-      "ErrorModel": {
-        "properties": {
-          "detail": {
+          "execution_time": {
+            "type": "number",
+            "title": "Execution Time"
+          },
+          "metadata": {
             "anyOf": [
               {
-                "type": "string"
-              },
-              {
-                "additionalProperties": {
-                  "type": "string"
-                },
                 "type": "object"
-              }
-            ],
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "required": [
-          "detail"
-        ],
-        "title": "ErrorModel"
-      },
-      "FileDescription": {
-        "properties": {
-          "path": {
-            "type": "string",
-            "title": "Path"
-          },
-          "description": {
-            "type": "string",
-            "title": "Description"
-          },
-          "type": {
-            "type": "string",
-            "title": "Type"
-          },
-          "size": {
-            "anyOf": [
-              {
-                "type": "integer"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Size"
-          },
-          "language": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Language"
+            "title": "Metadata"
           }
         },
         "type": "object",
         "required": [
-          "path",
-          "description",
-          "type"
+          "response",
+          "agent_id",
+          "execution_time"
         ],
-        "title": "FileDescription"
+        "title": "AgentResponse",
+        "description": "Generic response for an agent that returns a simple text response."
       },
       "HTTPValidationError": {
         "properties": {
@@ -1313,206 +207,98 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
-      "ItemCreate": {
+      "NewCardAgentResponse": {
         "properties": {
-          "name": {
+          "card_data": {
+            "$ref": "#/components/schemas/NewCardData"
+          },
+          "agent_id": {
             "type": "string",
-            "title": "Name"
+            "title": "Agent Id"
+          },
+          "execution_time": {
+            "type": "number",
+            "title": "Execution Time"
+          },
+          "metadata": {
+            "type": "object",
+            "title": "Metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "card_data",
+          "agent_id",
+          "execution_time",
+          "metadata"
+        ],
+        "title": "NewCardAgentResponse",
+        "description": "The final, structured response from our endpoint."
+      },
+      "NewCardData": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
           },
           "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "title": "Description"
           },
-          "quantity": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Quantity"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name"
-        ],
-        "title": "ItemCreate"
-      },
-      "ItemRead": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name"
+          "task_type": {
+            "$ref": "#/components/schemas/TaskType"
           },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "quantity": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Quantity"
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Id"
-          },
-          "user_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "User Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name",
-          "id",
-          "user_id"
-        ],
-        "title": "ItemRead"
-      },
-      "RepoStatus": {
-        "type": "string",
-        "enum": [
-          "not_indexed",
-          "pending",
-          "indexed",
-          "failed"
-        ],
-        "title": "RepoStatus"
-      },
-      "RepositoryInfo": {
-        "properties": {
-          "id": {
-            "type": "integer",
-            "title": "Id"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "full_name": {
-            "type": "string",
-            "title": "Full Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "default_branch": {
-            "type": "string",
-            "title": "Default Branch"
-          },
-          "stars": {
-            "type": "integer",
-            "title": "Stars"
-          },
-          "forks": {
-            "type": "integer",
-            "title": "Forks"
-          },
-          "created_at": {
-            "type": "string",
-            "title": "Created At"
-          },
-          "updated_at": {
-            "type": "string",
-            "title": "Updated At"
-          },
-          "size": {
-            "type": "integer",
-            "title": "Size"
-          },
-          "owner": {
-            "$ref": "#/components/schemas/RepositoryOwner"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "name",
-          "full_name",
-          "default_branch",
-          "stars",
-          "forks",
-          "created_at",
-          "updated_at",
-          "size",
-          "owner"
-        ],
-        "title": "RepositoryInfo"
-      },
-      "RepositoryOwner": {
-        "properties": {
-          "login": {
-            "type": "string",
-            "title": "Login"
-          },
-          "id": {
-            "type": "integer",
-            "title": "Id"
-          },
-          "avatar_url": {
-            "type": "string",
-            "title": "Avatar Url"
-          }
-        },
-        "type": "object",
-        "required": [
-          "login",
-          "id",
-          "avatar_url"
-        ],
-        "title": "RepositoryOwner"
-      },
-      "RepositoryStatusResponse": {
-        "properties": {
           "status": {
-            "$ref": "#/components/schemas/RepoStatus"
+            "type": "string",
+            "const": "todo",
+            "title": "Status",
+            "default": "todo"
           },
-          "file_count": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "File Count"
+          "parameters": {
+            "$ref": "#/components/schemas/ResearchParameters"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "description",
+          "task_type",
+          "parameters"
+        ],
+        "title": "NewCardData",
+        "description": "The structured data for our Kanban card. This is our target output."
+      },
+      "OutboundCallRequest": {
+        "properties": {
+          "target_number": {
+            "type": "string",
+            "title": "Target Number",
+            "description": "Num\u00e9ro de t\u00e9l\u00e9phone du destinataire (format E.164)"
           },
-          "indexed_at": {
+          "market_overview": {
+            "type": "string",
+            "title": "Market Overview",
+            "description": "Texte de la Market Overview \u00e0 r\u00e9sumer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target_number",
+          "market_overview"
+        ],
+        "title": "OutboundCallRequest",
+        "example": {
+          "market_overview": "The European ed-tech market grew 23% last year, with France and Germany leading demand in AI-powered language tools, while competition in the UK intensifies.",
+          "target_number": "+33611421334"
+        }
+      },
+      "OutboundCallResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "call_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -1521,119 +307,13 @@
                 "type": "null"
               }
             ],
-            "title": "Indexed At"
+            "title": "Call Id"
           },
           "message": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "title": "Message"
-          }
-        },
-        "type": "object",
-        "required": [
-          "status"
-        ],
-        "title": "RepositoryStatusResponse"
-      },
-      "UserCreate": {
-        "properties": {
-          "email": {
-            "type": "string",
-            "format": "email",
-            "title": "Email"
           },
-          "password": {
-            "type": "string",
-            "title": "Password"
-          },
-          "is_active": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Active",
-            "default": true
-          },
-          "is_superuser": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Superuser",
-            "default": false
-          },
-          "is_verified": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Verified",
-            "default": false
-          }
-        },
-        "type": "object",
-        "required": [
-          "email",
-          "password"
-        ],
-        "title": "UserCreate"
-      },
-      "UserRead": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Id"
-          },
-          "email": {
-            "type": "string",
-            "format": "email",
-            "title": "Email"
-          },
-          "is_active": {
-            "type": "boolean",
-            "title": "Is Active",
-            "default": true
-          },
-          "is_superuser": {
-            "type": "boolean",
-            "title": "Is Superuser",
-            "default": false
-          },
-          "is_verified": {
-            "type": "boolean",
-            "title": "Is Verified",
-            "default": false
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "email"
-        ],
-        "title": "UserRead"
-      },
-      "UserUpdate": {
-        "properties": {
-          "password": {
+          "assistant_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -1642,56 +322,62 @@
                 "type": "null"
               }
             ],
-            "title": "Password"
+            "title": "Assistant Id"
           },
-          "email": {
+          "execution_time": {
+            "type": "number",
+            "title": "Execution Time"
+          },
+          "metadata": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "email"
+                "type": "object"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Email"
-          },
-          "is_active": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Active"
-          },
-          "is_superuser": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Superuser"
-          },
-          "is_verified": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Is Verified"
+            "title": "Metadata"
           }
         },
         "type": "object",
-        "title": "UserUpdate"
+        "required": [
+          "success",
+          "message",
+          "execution_time"
+        ],
+        "title": "OutboundCallResponse"
+      },
+      "ResearchParameters": {
+        "properties": {
+          "topics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Topics"
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope"
+          }
+        },
+        "type": "object",
+        "required": [
+          "topics",
+          "scope"
+        ],
+        "title": "ResearchParameters",
+        "description": "Parameters for a research task. Pydantic validates this for us."
+      },
+      "TaskType": {
+        "type": "string",
+        "enum": [
+          "research_task"
+        ],
+        "title": "TaskType",
+        "description": "The types of tasks our agent can create. Start with one, add more later."
       },
       "ValidationError": {
         "properties": {
@@ -1725,74 +411,6 @@
           "type"
         ],
         "title": "ValidationError"
-      },
-      "login": {
-        "properties": {
-          "grant_type": {
-            "anyOf": [
-              {
-                "type": "string",
-                "pattern": "password"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Grant Type"
-          },
-          "username": {
-            "type": "string",
-            "title": "Username"
-          },
-          "password": {
-            "type": "string",
-            "title": "Password"
-          },
-          "scope": {
-            "type": "string",
-            "title": "Scope",
-            "default": ""
-          },
-          "client_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Client Id"
-          },
-          "client_secret": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Client Secret"
-          }
-        },
-        "type": "object",
-        "required": [
-          "username",
-          "password"
-        ],
-        "title": "Body_auth-auth:jwt.login"
-      }
-    },
-    "securitySchemes": {
-      "OAuth2PasswordBearer": {
-        "type": "oauth2",
-        "flows": {
-          "password": {
-            "scopes": {},
-            "tokenUrl": "auth/jwt/login"
-          }
-        }
       }
     }
   }

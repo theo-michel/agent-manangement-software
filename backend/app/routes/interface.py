@@ -44,7 +44,7 @@ async def trigger_outbound_call(
     - **market_overview**: Texte de la Market Overview à résumer pendant l'appel
     """
     try:
-        logger.info(f"Triggering outbound call to {call_request.target_number}")
+        logger.info(f"Triggering owund call to {call_request.target_number}")
         return await vapi_service.make_outbound_call(call_request)
     except Exception as e:
         logger.error(f"Error triggering outbound call: {str(e)}")

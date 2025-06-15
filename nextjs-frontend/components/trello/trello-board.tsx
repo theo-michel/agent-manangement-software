@@ -25,7 +25,7 @@ export function TrelloBoard() {
   const [activeCard, setActiveCard] = useState<TaskCard | null>(null);
   const [selectedCard, setSelectedCard] = useState<TaskCard | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  
   // Configure sensors with activation constraints
   const sensors = useSensors(
     useSensor(PointerSensor, {
