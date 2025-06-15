@@ -63,7 +63,7 @@ class NewCardData(BaseModel):
 class NewCardAgentResponse(BaseModel):
     """The final, structured response from our endpoint."""
 
-    card_data: NewCardData
+    card_data: list[NewCardData]
     agent_id: str
     execution_time: float
     metadata: Dict[str, Any]
