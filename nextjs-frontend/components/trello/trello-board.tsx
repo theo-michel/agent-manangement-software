@@ -14,7 +14,8 @@ import {
 import { DroppableColumn } from './droppable-column';
 import { DraggableCard } from './draggable-card';
 import { CardDetailModal } from './card-detail-modal';
-import { createNewCardFromPrompt } from '@/app/openapi-client';
+import { client } from '@/lib/clientConfig';
+import type { CreateNewCardFromPromptData, CreateNewCardFromPromptResponse } from '@/app/openapi-client/types.gen';
 import type { NewCardAgentResponse } from '@/app/openapi-client/types.gen';
 import { Button } from '@/components/ui/button';
 import { Plus, Users, Star, Shield, Zap } from 'lucide-react';
@@ -239,7 +240,8 @@ export function TrelloBoard() {
 
             try {
         // Call AI endpoint
-        const response = await createNewCardFromPrompt({
+        const response = await client.post<CreateNewCardFromPromptResponse>({
+          url: '/chat/new-card',
           body: {
             prompt: prompt,
             context: {
@@ -262,7 +264,7 @@ export function TrelloBoard() {
               newColumns[targetColumnIndex].cards[cardIndex] = {
                 ...newColumns[targetColumnIndex].cards[cardIndex],
                 isLoading: false,
-                aiResponse: `AI processed: ${response.card_data.title} - ${response.card_data.description}`
+                aiResponse: `AI processed: ${response.data?.card_data.title || 'Unknown'} - ${response.data?.card_data.description || 'No description'}`
               };
             }
           }
@@ -272,8 +274,8 @@ export function TrelloBoard() {
           if (todoColumnIndex !== -1) {
             const newCard: TaskCard = {
               id: `card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-              title: response.card_data.title,
-              description: response.card_data.description,
+              title: response.data?.card_data.title || 'Untitled',
+              description: response.data?.card_data.description || '',
               status: 'todo' as const,
               containerId: 'todo',
               assignees: [],
