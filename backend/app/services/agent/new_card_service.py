@@ -34,7 +34,7 @@ def _get_system_prompt() -> str:
     For EACH card in the list, you MUST:
     1.  Assign a unique `card_id` string (e.g., "task-1", "task-2"). This ID is temporary and local to this response.
     2.  Fill out the card details (`title`, `description`, etc.).
-    3.  Determine the `task_type`. Use `research_task` for investigation and `reporting_task` for summarizing or creating documents.
+    3.  Determine the `task_type`. Use `research_task` for investigation and `phone_task` for calling experts or team members to inform them of results.
     4.  Crucially, for any card that depends on another, add the prerequisite card's `card_id` to its `dependencies` list. The first task(s) should have an empty `dependencies` list.
 
     **Correct JSON Output Structure Example:**
@@ -52,9 +52,9 @@ def _get_system_prompt() -> str:
         },
         {
           "card_id": "task-2",
-          "title": "Create Summary Report",
-          "description": "Summarize the findings from the market research.",
-          "task_type": "reporting_task",
+          "title": "Call Supervisor",
+          "description": "Inform supervisor of the results of the market research.",
+          "task_type": "phone_task",
           "status": "todo",
           "parameters": null,
           "dependencies": ["task-1"]

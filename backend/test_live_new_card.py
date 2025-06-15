@@ -14,7 +14,7 @@ from app.services.github.schema import AgentRequest, NewCardData, TaskType
 async def test_live_create_cards_with_dependencies():
     """
     A LIVE integration test that checks if the AI can create a sequence
-    of tasks with dependencies (e.g., research THEN report).
+    of tasks with dependencies (e.g., research THEN phone).
     """
     assert (
         os.getenv("ANTHROPIC_API_KEY") is not None
@@ -23,7 +23,7 @@ async def test_live_create_cards_with_dependencies():
     # A prompt that explicitly asks for a sequence of tasks
     dependency_prompt = (
         "First, I need to research the market for solar panels in Spain. "
-        "After that is done, create a summary report of the findings for the leadership team."
+        "After that is done, i need to call the leadership team to inform them about my findings."
     )
 
     request = AgentRequest(prompt=dependency_prompt)
@@ -37,31 +37,31 @@ async def test_live_create_cards_with_dependencies():
 
     # --- Assertions for Dependency Logic ---
 
-    assert len(result.card_data) >= 2, "Should create at least a research and a report card."
+    assert len(result.card_data) >= 2, "Should create at least a research and a phone card."
 
-    # Find the research and report cards
+    # Find the research and phone cards
     research_cards = [
         c for c in result.card_data if c.task_type == TaskType.RESEARCH
     ]
-    report_cards = [
-        c for c in result.card_data if c.task_type == TaskType.REPORTING
+    phone_cards = [
+        c for c in result.card_data if c.task_type == TaskType.PHONE
     ]
 
     assert len(research_cards) > 0, "At least one research card should exist."
-    assert len(report_cards) == 1, "Exactly one report card should exist."
+    assert len(phone_cards) == 1, "Exactly one phone card should exist."
 
-    report_card = report_cards[0]
+    phone_card = phone_cards[0]
     research_card_ids = {card.card_id for card in research_cards}
 
-    print(f"Report Card: '{report_card.title}'")
-    print(f"  - Dependencies: {report_card.dependencies}")
-    print(f"Research Card IDs: {research_card_ids}")
+    print(f"phone Card: '{phone_card.title}'")
+    print(f"  - Dependencies: {phone_card.dependencies}")
+    print(f"Phone Card IDs: {research_card_ids}")
 
-    # The crucial check: The report card must depend on the research card(s).
-    assert len(report_card.dependencies) > 0, "Report card should have dependencies."
+    # The crucial check: The phone card must depend on the research card(s).
+    assert len(phone_card.dependencies) > 0, "phone card should have dependencies."
     assert all(
-        dep in research_card_ids for dep in report_card.dependencies
-    ), "Report card must depend on the generated research cards."
+        dep in research_card_ids for dep in phone_card.dependencies
+    ), "phone card must depend on the generated research cards."
 
     # The research card(s) should have no dependencies
     for research_card in research_cards:
@@ -70,3 +70,5 @@ async def test_live_create_cards_with_dependencies():
         ), "Initial research cards should have no dependencies."
 
     print("\n--- ✅ LIVE TEST PASSED: The agent successfully created a task chain with valid dependencies. ---")
+
+    print(result.card_data)
