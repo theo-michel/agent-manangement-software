@@ -2,7 +2,7 @@ import json
 import logging
 import time
 import uuid
-from typing import Dict, Any
+
 
 import anthropic
 from pydantic import ValidationError
@@ -15,6 +15,9 @@ from app.services.github.schema import (
 
 logger = logging.getLogger(__name__)
 
+
+# --- One-Time Initialization ---
+# This client is created once when the module is first imported.
 claude_client = anthropic.AsyncAnthropic()
 AGENT_ID = f"new-card-func-{str(uuid.uuid4())[:8]}"
 

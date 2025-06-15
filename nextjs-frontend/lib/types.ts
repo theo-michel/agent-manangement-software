@@ -5,6 +5,17 @@ export interface User {
   initials: string;
 }
 
+export interface AIMetadata {
+  taskType?: string;
+  parameters?: {
+    topics?: string[];
+    scope?: string;
+    [key: string]: any;
+  };
+  agentId?: string;
+  executionTime?: number;
+}
+
 export interface TaskCard {
   id: string;
   title: string;
@@ -24,6 +35,7 @@ export interface TaskCard {
   isSubTask?: boolean; // Whether this is a sub-task (dependent task)
   parentTaskId?: string; // ID of the parent task if this is a sub-task
   autoCreated?: boolean; // Whether this card was auto-created by AI
+  aiMetadata?: AIMetadata; // Metadata from AI processing
 }
 
 export interface TaskLabel {
