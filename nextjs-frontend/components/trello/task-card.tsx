@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { TaskCard as TaskCardType } from '@/lib/types';
-import { Calendar, MessageCircle, Paperclip } from 'lucide-react';
+import { Calendar, MessageCircle, Paperclip, Loader2, Sparkles, Link, Bot, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TaskCardProps {
@@ -63,9 +63,71 @@ export function TaskCard({ card, className }: TaskCardProps) {
         )}
 
         {/* Title */}
-        <h3 className="text-sm font-medium text-gray-900 mb-2 leading-relaxed line-clamp-3">
-          {card.title}
-        </h3>
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex-1">
+            <div className="flex items-center gap-1 mb-1">
+              <h3 className="text-sm font-medium text-gray-900 leading-relaxed line-clamp-3 flex-1">
+                {card.title}
+              </h3>
+              {card.isLoading && (
+                <Loader2 className="w-4 h-4 text-blue-500 animate-spin flex-shrink-0" />
+              )}
+              {card.aiResponse && !card.isLoading && (
+                <Sparkles className="w-4 h-4 text-purple-500 flex-shrink-0" />
+              )}
+            </div>
+            
+            {/* Dependency and Auto-created indicators */}
+            <div className="flex items-center gap-2 mt-1">
+              {card.autoCreated && (
+                <Badge className="text-xs bg-blue-100 text-blue-700 border-blue-200">
+                  <Bot className="w-3 h-3 mr-1" />
+                  AI Created
+                </Badge>
+              )}
+              {(card.dependsOn && card.dependsOn.length > 0) && (
+                <Badge className="text-xs bg-orange-100 text-orange-700 border-orange-200">
+                  <Link className="w-3 h-3 mr-1" />
+                  Depends on {card.dependsOn.length}
+                </Badge>
+              )}
+              {(card.blockedBy && card.blockedBy.length > 0) && (
+                <Badge className="text-xs bg-red-100 text-red-700 border-red-200">
+                  <Clock className="w-3 h-3 mr-1" />
+                  Blocked
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* AI Response */}
+        {card.aiResponse && !card.isLoading && (
+          <div className="mb-3 p-2 bg-purple-50 border border-purple-200 rounded-md">
+            <div className="flex items-center gap-1 mb-1">
+              <Sparkles className="w-3 h-3 text-purple-600" />
+              <span className="text-xs font-medium text-purple-700">AI Response</span>
+            </div>
+            <p className="text-xs text-purple-800 line-clamp-3">
+              {card.aiResponse}
+            </p>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {card.isLoading && (
+          <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded-md">
+            <div className="flex items-center gap-1 mb-1">
+              <Loader2 className="w-3 h-3 text-blue-600 animate-spin" />
+              <span className="text-xs font-medium text-blue-700">Processing with AI...</span>
+            </div>
+            <div className="flex space-x-1">
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+            </div>
+          </div>
+        )}
 
         {/* Progress Bar */}
         {card.progress !== undefined && (
