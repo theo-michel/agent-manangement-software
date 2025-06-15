@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException
 import logging
 
-from app.services.github.schema import  AgentRequest, AgentResponse
+from app.services.agent import new_card_service
+from app.services.github.schema import AgentRequest, AgentResponse, NewCardAgentResponse
 from app.services.chat.service import ChatService
 from app.services.agent.service import AgentService
 from app.services.vapi.service import VapiService
@@ -47,9 +48,33 @@ async def trigger_outbound_call(
         return await vapi_service.make_outbound_call(call_request)
     except Exception as e:
         logger.error(f"Error triggering outbound call: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Outbound call failed: {str(e)}") 
-    
+        raise HTTPException(status_code=500, detail=f"Outbound call failed: {str(e)}")
 
+@router.post("/new-card", response_model=NewCardAgentResponse)
+async def create_new_card_from_prompt(
+        agent_request: AgentRequest,
+):
+        """
+        Takes a natural language prompt and uses a smolagent to create a
+        structured new task card.
+        """
+        if not agent_request.prompt or not agent_request.prompt.strip():
+            raise HTTPException(status_code=400, detail="Prompt cannot be empty.")
+
+        try:
+            return await new_card_service.process_prompt(agent_request)
+        except ValueError as e:
+            # Catches user errors or bad output from the model (4xx error)
+            raise HTTPException(status_code=400, detail=str(e))
+        except RuntimeError as e:
+            # Catches backend service failures (5xx error)
+            raise HTTPException(status_code=503, detail=str(e))
+        except Exception as e:
+            # Catch-all for any other unexpected server error
+            logger.exception(f"Unhandled exception in /new-card endpoint: {e}")
+            raise HTTPException(
+                status_code=500, detail="An internal server error occurred."
+            )
 
 
 # exemple pour call outbound :
