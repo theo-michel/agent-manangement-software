@@ -163,6 +163,93 @@ export function TaskCard({ card, className }: TaskCardProps) {
           </div>
         )}
 
+        {/* Execution State */}
+        {card.execution && card.execution.status === 'executing' && (
+          <div className="mb-3 p-2 border rounded-md animate-pulse">
+            <div className="flex items-center gap-1 mb-1">
+              {card.execution.executionType === 'web_search' && (
+                <>
+                  <Search className="w-3 h-3 text-indigo-600 animate-pulse" />
+                  <span className="text-xs font-medium text-indigo-700">Performing deep search...</span>
+                </>
+              )}
+              {card.execution.executionType === 'phone_call' && (
+                <>
+                  <Phone className="w-3 h-3 text-emerald-600 animate-pulse" />
+                  <span className="text-xs font-medium text-emerald-700">Making phone call...</span>
+                </>
+              )}
+              {card.execution.executionType === 'ai_processing' && (
+                <>
+                  <Loader2 className="w-3 h-3 text-purple-600 animate-spin" />
+                  <span className="text-xs font-medium text-purple-700">AI processing...</span>
+                </>
+              )}
+            </div>
+            <div className="flex space-x-1">
+              {card.execution.executionType === 'web_search' && (
+                <>
+                  <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </>
+              )}
+              {card.execution.executionType === 'phone_call' && (
+                <>
+                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </>
+              )}
+              {card.execution.executionType === 'ai_processing' && (
+                <>
+                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Failed Execution State */}
+        {card.execution && card.execution.status === 'failed' && (
+          <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded-md">
+            <div className="flex items-center gap-1 mb-1">
+              <div className="w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">!</span>
+              </div>
+              <span className="text-xs font-medium text-red-700">Execution failed</span>
+            </div>
+            {card.execution.error && (
+              <p className="text-xs text-red-600 line-clamp-2">
+                {card.execution.error}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Completed Execution State */}
+        {card.execution && card.execution.status === 'completed' && card.status === 'done' && (
+          <div className="mb-3 p-2 bg-green-50 border border-green-200 rounded-md">
+            <div className="flex items-center gap-1 mb-1">
+              <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">✓</span>
+              </div>
+              <span className="text-xs font-medium text-green-700">
+                {card.execution.executionType === 'web_search' && 'Search completed'}
+                {card.execution.executionType === 'phone_call' && 'Call completed'}
+                {card.execution.executionType === 'ai_processing' && 'Processing completed'}
+              </span>
+            </div>
+            {card.execution.completedAt && (
+              <p className="text-xs text-green-600">
+                Completed at {new Date(card.execution.completedAt).toLocaleTimeString()}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Progress Bar */}
         {card.progress !== undefined && (
           <div className="mb-3">

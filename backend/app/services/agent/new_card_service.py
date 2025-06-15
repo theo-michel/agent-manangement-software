@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import time
@@ -89,35 +90,51 @@ async def create_new_card_from_prompt(
     start_time = time.time()
     logger.info(f"Agent processing prompt: '{agent_request.prompt[:70]}...'")
 
-    try:
-        message = await claude_client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=5000,  # Increased for more complex structures
-            system=_get_system_prompt(),
-            messages=[{"role": "user", "content": agent_request.prompt}],
-        )
+    max_retries = 3
+    base_delay = 2  # seconds
+    
+    for attempt in range(max_retries):
+        try:
+            message = await claude_client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=5000,  # Increased for more complex structures
+                system=_get_system_prompt(),
+                messages=[{"role": "user", "content": agent_request.prompt}],
+            )
 
-        response_text = message.content[0].text
-        cleaned_json_text = _extract_json_from_response(response_text)
-        response_json = json.loads(cleaned_json_text)
+            response_text = message.content[0].text
+            cleaned_json_text = _extract_json_from_response(response_text)
+            response_json = json.loads(cleaned_json_text)
 
-        if "error" in response_json:
-            raise ValueError(response_json["error"])
+            if "error" in response_json:
+                raise ValueError(response_json["error"])
 
-        card_list_json = response_json.get("cards")
-        if not isinstance(card_list_json, list):
-            raise ValueError("AI response is missing the 'cards' list.")
+            card_list_json = response_json.get("cards")
+            if not isinstance(card_list_json, list):
+                raise ValueError("AI response is missing the 'cards' list.")
 
-        # Validate each card and then validate the dependency graph
-        validated_cards = [NewCardData(**card) for card in card_list_json]
-        _validate_dependencies(validated_cards)
+            # Validate each card and then validate the dependency graph
+            validated_cards = [NewCardData(**card) for card in card_list_json]
+            _validate_dependencies(validated_cards)
+            
+            # Success, break out of retry loop
+            break
 
-    except (ValidationError, json.JSONDecodeError, TypeError) as e:
-        logger.error(f"AI response failed validation: {e}")
-        raise ValueError(f"AI model returned invalid data: {e}")
-    except anthropic.APIError as e:
-        logger.error(f"Anthropic API error: {e}")
-        raise RuntimeError(f"AI service is currently unavailable: {e}")
+        except (ValidationError, json.JSONDecodeError, TypeError) as e:
+            logger.error(f"AI response failed validation: {e}")
+            raise ValueError(f"AI model returned invalid data: {e}")
+        except anthropic.APIError as e:
+            error_msg = str(e).lower()
+            
+            # Check if it's a rate limit or overload error
+            if ("overloaded" in error_msg or "rate limit" in error_msg or "429" in error_msg or "529" in error_msg) and attempt < max_retries - 1:
+                delay = base_delay * (2 ** attempt)  # Exponential backoff
+                logger.warning(f"Anthropic API overloaded/rate limited (attempt {attempt + 1}/{max_retries}). Retrying in {delay} seconds...")
+                await asyncio.sleep(delay)
+                continue
+            else:
+                logger.error(f"Anthropic API error: {e}")
+                raise RuntimeError(f"AI service is currently unavailable after {attempt + 1} attempts: {e}")
 
     execution_time = time.time() - start_time
     metadata = {
@@ -125,6 +142,7 @@ async def create_new_card_from_prompt(
         "input_tokens": message.usage.input_tokens,
         "output_tokens": message.usage.output_tokens,
         "card_count": len(validated_cards),
+        "attempts_made": attempt + 1,
     }
 
     return NewCardAgentResponse(
