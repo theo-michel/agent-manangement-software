@@ -154,12 +154,18 @@ export function TrelloBoard() {
   }, []);
 
   const handleAddCard = useCallback((columnId: string) => {
+    // Only allow adding cards to the TODO column
+    if (columnId !== 'todo') {
+      console.warn('Cards can only be added to the TODO column');
+      return;
+    }
+    
     const newCard: TaskCard = {
       id: `card-${Date.now()}`,
       title: '',
       description: '',
-      status: columnId as 'todo' | 'doing' | 'done',
-      containerId: columnId,
+      status: 'todo', // Always set to 'todo' since we only allow adding to TODO
+      containerId: 'todo', // Always set to 'todo'
       assignees: [],
       labels: [],
       progress: 0,
@@ -256,7 +262,7 @@ export function TrelloBoard() {
           if (targetColumnIndex !== -1) {
             const cardIndex = newColumns[targetColumnIndex].cards.findIndex(card => card.id === updatedCard.id);
             if (cardIndex !== -1) {
-              const cardCount = response.card_data?.length || 0;
+              const cardCount = Array.isArray(response.card_data) ? response.card_data.length : 0;
               newColumns[targetColumnIndex].cards[cardIndex] = {
                 ...newColumns[targetColumnIndex].cards[cardIndex],
                 isLoading: false,
