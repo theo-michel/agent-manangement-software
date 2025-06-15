@@ -21,46 +21,40 @@ AGENT_ID = f"new-card-func-{str(uuid.uuid4())[:8]}"
 
 def _get_system_prompt() -> str:
     """
-    Updated prompt to instruct the LLM to break down a request into a
-    list of cards.
+    Updated prompt to instruct the LLM to create tasks with dependencies.
     """
     return """
-    You are an expert project manager. Your job is to analyze a user's request and break it down into a series of logical, actionable task cards.
+    You are an expert project manager. Your job is to analyze a user's request and break it down into a series of logical, actionable task cards with dependencies.
 
-    You MUST respond with a single JSON object. This object must have a single key, "cards", which contains a list of task card objects.
+    You MUST respond with a single JSON object with a single key, "cards", containing a list of task card objects.
 
-    For each card in the list, you MUST adhere to this schema:
-    - `title`: A concise, action-oriented title.
-    - `description`: A clear description of the specific sub-task.
-    - `task_type`: This MUST be `research_task`.
-    - `status`: This MUST be `todo`.
-    - `parameters`: An object containing `topics` (a list of strings) and `scope` (a string).
-
-    If the user's request is simple and only requires one card, return a list containing that single card. If the request is complex, break it down into multiple cards.
+    For EACH card in the list, you MUST:
+    1.  Assign a unique `card_id` string (e.g., "task-1", "task-2"). This ID is temporary and local to this response.
+    2.  Fill out the card details (`title`, `description`, etc.).
+    3.  Determine the `task_type`. Use `research_task` for investigation and `reporting_task` for summarizing or creating documents.
+    4.  Crucially, for any card that depends on another, add the prerequisite card's `card_id` to its `dependencies` list. The first task(s) should have an empty `dependencies` list.
 
     **Correct JSON Output Structure Example:**
     ```json
     {
       "cards": [
         {
-          "title": "Analyze French Ed-Tech Market",
-          "description": "Conduct a market analysis of the French educational technology sector, focusing on market size and key players.",
+          "card_id": "task-1",
+          "title": "Research German EV Market",
+          "description": "Analyze the German market for electric vehicles.",
           "task_type": "research_task",
           "status": "todo",
-          "parameters": {
-            "topics": ["market size", "key players", "growth trends"],
-            "scope": "Market Analysis"
-          }
+          "parameters": { "topics": ["market size", "key players"], "scope": "Market Analysis" },
+          "dependencies": []
         },
         {
-          "title": "Research German AI Learning Tools",
-          "description": "Investigate the landscape of AI-powered language learning tools specifically within Germany.",
-          "task_type": "research_task",
+          "card_id": "task-2",
+          "title": "Create Summary Report",
+          "description": "Summarize the findings from the market research.",
+          "task_type": "reporting_task",
           "status": "todo",
-          "parameters": {
-            "topics": ["AI tools", "language learning", "competitor features"],
-            "scope": "Competitor Overview"
-          }
+          "parameters": null,
+          "dependencies": ["task-1"]
         }
       ]
     }
@@ -72,7 +66,7 @@ async def create_new_card_from_prompt(
     agent_request: AgentRequest,
 ) -> NewCardAgentResponse:
     """
-    Processes a prompt to create one or more structured cards.
+    Processes a prompt to create one or more structured cards with dependencies.
     """
     start_time = time.time()
     logger.info(f"Agent processing prompt: '{agent_request.prompt[:70]}...'")
@@ -80,7 +74,7 @@ async def create_new_card_from_prompt(
     try:
         message = await claude_client.messages.create(
             model="claude-3-5-sonnet-20240620",
-            max_tokens=2048,  # Increased tokens for potentially larger lists
+            max_tokens=3072,  # Increased for more complex structures
             system=_get_system_prompt(),
             messages=[{"role": "user", "content": agent_request.prompt}],
         )
@@ -91,13 +85,13 @@ async def create_new_card_from_prompt(
         if "error" in response_json:
             raise ValueError(response_json["error"])
 
-        # Extract the list of cards from the 'cards' key
         card_list_json = response_json.get("cards")
-        if card_list_json is None:
+        if not isinstance(card_list_json, list):
             raise ValueError("AI response is missing the 'cards' list.")
 
-        # Validate each card in the list using a list comprehension
+        # Validate each card and then validate the dependency graph
         validated_cards = [NewCardData(**card) for card in card_list_json]
+        _validate_dependencies(validated_cards)
 
     except (ValidationError, json.JSONDecodeError, TypeError) as e:
         logger.error(f"AI response failed validation: {e}")
@@ -120,3 +114,17 @@ async def create_new_card_from_prompt(
         execution_time=execution_time,
         metadata=metadata,
     )
+
+
+def _validate_dependencies(cards: list[NewCardData]):
+    """
+    Ensures that all listed dependencies refer to card_ids that actually exist.
+    """
+    all_card_ids = {card.card_id for card in cards}
+    for card in cards:
+        for dep_id in card.dependencies:
+            if dep_id not in all_card_ids:
+                raise ValueError(
+                    f"Invalid dependency graph: Card '{card.title}' depends on "
+                    f"non-existent card_id '{dep_id}'."
+                )

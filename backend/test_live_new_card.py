@@ -2,64 +2,71 @@ import os
 import pytest
 from dotenv import load_dotenv
 
-# This is the "bad python hack" to load the .env file.
-# It looks for a .env file in the current directory (or parent directories)
-# and loads its variables into the environment.
+# Load .env file for the API key
 load_dotenv()
 
-# Now we can import our modules, which will have access to the API key
 from app.services.agent.new_card_service import create_new_card_from_prompt
-from app.services.github.schema import AgentRequest, NewCardData
+from app.services.github.schema import AgentRequest, NewCardData, TaskType
 
 
-# Mark this test as 'live' so you can run it separately from fast unit tests.
-# This test will be slow and will cost money (API credits).
 @pytest.mark.live
 @pytest.mark.asyncio
-async def test_live_create_multiple_cards():
+async def test_live_create_cards_with_dependencies():
     """
-    This is a LIVE integration test. It makes a REAL API call to Anthropic.
-    It verifies that the end-to-end flow works and that the AI can
-    correctly break down a complex prompt into multiple cards.
+    A LIVE integration test that checks if the AI can create a sequence
+    of tasks with dependencies (e.g., research THEN report).
     """
-    # Ensure the API key is loaded before running the test
     assert (
         os.getenv("ANTHROPIC_API_KEY") is not None
-    ), "ANTHROPIC_API_KEY not found. Make sure your .env file is correct."
+    ), "ANTHROPIC_API_KEY not found in .env file."
 
-    # A complex prompt that should ideally generate multiple cards
-    complex_prompt = (
-        "Please create a project plan to analyze the market for electric "
-        "vehicles in Europe. I need one card for researching the German market "
-        "and another for the French market. Also, create a final card for "
-        "summarizing the findings."
+    # A prompt that explicitly asks for a sequence of tasks
+    dependency_prompt = (
+        "First, I need to research the market for solar panels in Spain. "
+        "After that is done, create a summary report of the findings for the leadership team."
     )
 
-    request = AgentRequest(prompt=complex_prompt)
+    request = AgentRequest(prompt=dependency_prompt)
 
-    print(f"\n--- Sending LIVE request to Claude with prompt: '{complex_prompt}' ---")
+    print(f"\n--- Sending LIVE request to Claude with prompt: '{dependency_prompt}' ---")
 
-    # Call the actual function, no mocking!
     result = await create_new_card_from_prompt(request)
 
-    # --- Flexible Assertions for Live Tests ---
-
-    print(f"--- Received response from Claude. Execution time: {result.execution_time:.2f}s ---")
+    print(f"--- Received response. Execution time: {result.execution_time:.2f}s ---")
     print(f"--- Claude generated {len(result.card_data)} card(s) ---")
 
-    # 1. Check the overall structure
-    assert result is not None
-    assert len(result.card_data) > 0, "The AI should have created at least one card."
+    # --- Assertions for Dependency Logic ---
 
-    # 2. Check the contents of each card
-    for i, card in enumerate(result.card_data):
-        print(f"\n--- Validating Card {i+1}: '{card.title}' ---")
-        assert isinstance(card, NewCardData)
-        assert isinstance(card.title, str) and len(card.title) > 5
-        assert isinstance(card.description, str) and len(card.description) > 10
-        assert card.status == "todo"
-        assert card.task_type == "research_task"
-        assert isinstance(card.parameters.topics, list) and len(card.parameters.topics) > 0
-        assert isinstance(card.parameters.scope, str) and len(card.parameters.scope) > 3
+    assert len(result.card_data) >= 2, "Should create at least a research and a report card."
 
-    print("\n--- ✅ LIVE TEST PASSED: The agent successfully created and validated cards from a real API call. ---")
+    # Find the research and report cards
+    research_cards = [
+        c for c in result.card_data if c.task_type == TaskType.RESEARCH
+    ]
+    report_cards = [
+        c for c in result.card_data if c.task_type == TaskType.REPORTING
+    ]
+
+    assert len(research_cards) > 0, "At least one research card should exist."
+    assert len(report_cards) == 1, "Exactly one report card should exist."
+
+    report_card = report_cards[0]
+    research_card_ids = {card.card_id for card in research_cards}
+
+    print(f"Report Card: '{report_card.title}'")
+    print(f"  - Dependencies: {report_card.dependencies}")
+    print(f"Research Card IDs: {research_card_ids}")
+
+    # The crucial check: The report card must depend on the research card(s).
+    assert len(report_card.dependencies) > 0, "Report card should have dependencies."
+    assert all(
+        dep in research_card_ids for dep in report_card.dependencies
+    ), "Report card must depend on the generated research cards."
+
+    # The research card(s) should have no dependencies
+    for research_card in research_cards:
+        assert (
+            len(research_card.dependencies) == 0
+        ), "Initial research cards should have no dependencies."
+
+    print("\n--- ✅ LIVE TEST PASSED: The agent successfully created a task chain with valid dependencies. ---")
