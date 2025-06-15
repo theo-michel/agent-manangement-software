@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
+
 import { TaskCard, User } from '@/lib/types';
 import {
   Calendar,
@@ -26,9 +26,10 @@ import {
   X,
   Plus,
   Sparkles,
-  Loader2,
+  Loader2, ImageIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {generateImageEndpoint, ImageGenerationResponse} from "@/app/openapi-client";
 
 interface CardDetailModalProps {
   card: TaskCard | null;
@@ -77,9 +78,54 @@ export function CardDetailModal({
     }
   };
 
-  const updateProgress = (progress: number) => {
-    setEditedCard({ ...editedCard, progress });
-  };
+const handleGenerateImage = async () => {
+  if (!editedCard || !editedCard.title) return;
+
+  // 1. Set loading state immediately
+  const cardWithLoading = { ...editedCard, isGeneratingImage: true };
+  setEditedCard(cardWithLoading);
+  onSave(cardWithLoading);
+
+  try {
+    // 2. Create a descriptive prompt
+    const prompt = `A digital art banner for a project task card titled: "${editedCard.title}". Description: ${editedCard.description || 'No description.'}. Style: vibrant, professional, slightly abstract.`;
+
+    // 3. Call the API
+    const response = await generateImageEndpoint({
+      body: {
+        prompt: prompt,
+      },
+    });
+
+    // --- THIS IS THE FIX ---
+    // 4. Add a "Type Guard" to safely handle the response.
+    if (!response.data) {
+      // If there's no data, it means an error occurred.
+      // The generated client might put error details in `response.error`.
+      console.error("Image generation failed:", response.error || "No data in response");
+      throw new Error("Failed to generate image: No data received.");
+    }
+    // --- END OF FIX ---
+
+    // After the guard clause, TypeScript knows `response.data` is defined.
+    // The error TS18048 will now be gone.
+    const cardWithImage = {
+      ...cardWithLoading,
+      coverImage: response.data.image_base64,
+      isGeneratingImage: false,
+    };
+    setEditedCard(cardWithImage);
+    onSave(cardWithImage);
+
+  } catch (error) {
+    console.error("Image generation failed:", error);
+    const cardWithError = { ...editedCard, isGeneratingImage: false };
+    setEditedCard(cardWithError);
+    onSave(cardWithError);
+  }
+};
+
+
 
   const toggleAssignee = (user: User) => {
     const isAssigned = editedCard.assignees.some(a => a.id === user.id);
@@ -167,6 +213,33 @@ export function CardDetailModal({
                 </div>
               )}
             </div>
+
+            {/* --- ADD IMAGE GENERATION BUTTON --- */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block flex items-center gap-2">
+                <ImageIcon className="w-4 h-4" />
+                Cover Image
+              </label>
+              <Button
+                variant="outline"
+                onClick={handleGenerateImage}
+                disabled={editedCard.isGeneratingImage}
+                className="w-full"
+              >
+                {editedCard.isGeneratingImage ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generate with AI
+                  </>
+                )}
+              </Button>
+            </div>
+            {/* --- END OF IMAGE GENERATION BUTTON --- */}
 
             {/* AI Response */}
             {(editedCard.aiResponse || editedCard.isLoading) && (
@@ -359,4 +432,4 @@ export function CardDetailModal({
       </DialogContent>
     </Dialog>
   );
-} 
+}

@@ -3,7 +3,6 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { TaskCard as TaskCardType } from '@/lib/types';
 import { Calendar, MessageCircle, Paperclip, Loader2, Sparkles, Link, Bot, Clock, Phone, Search } from 'lucide-react';
@@ -21,12 +20,6 @@ export function TaskCard({ card, className }: TaskCardProps) {
       month: 'short', 
       day: 'numeric' 
     });
-  };
-
-  const getProgressColor = (progress: number) => {
-    if (progress >= 100) return 'bg-green-500';
-    if (progress >= 50) return 'bg-yellow-500';
-    return 'bg-blue-500';
   };
 
   const getTaskTypeBadge = (taskType: string) => {
@@ -55,13 +48,23 @@ export function TaskCard({ card, className }: TaskCardProps) {
         className
       )}
     >
-      <CardContent className="p-4">
-        {/* Cover Image Area */}
-        {card.id === '1' && (
-          <div className="w-full h-24 mb-3 rounded-md bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center overflow-hidden">
-            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
-              <div className="w-8 h-8 rounded-full bg-white/40 animate-pulse"></div>
-            </div>
+
+      <CardContent className="p-4 relative">
+
+        {card.coverImage && !card.isGeneratingImage && (
+          <div className="w-full h-32 mb-3 rounded-md overflow-hidden">
+            <img
+              src={`data:image/png;base64,${card.coverImage}`}
+              alt={card.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
+
+        {card.isGeneratingImage && (
+          <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex flex-col items-center justify-center z-10 rounded-lg">
+            <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+            <p className="text-sm text-blue-600 mt-2">Generating Image...</p>
           </div>
         )}
         
@@ -250,28 +253,6 @@ export function TaskCard({ card, className }: TaskCardProps) {
           </div>
         )}
 
-        {/* Progress Bar */}
-        {card.progress !== undefined && (
-          <div className="mb-3">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-gray-600">Progress</span>
-              <span className="text-xs text-gray-600 font-medium">{card.progress}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-              <div
-                className={cn(
-                  "h-1.5 rounded-full transition-all duration-500 ease-out", 
-                  getProgressColor(card.progress)
-                )}
-                style={{ 
-                  width: `${card.progress}%`,
-                  transformOrigin: 'left center'
-                }}
-              />
-            </div>
-          </div>
-        )}
-
         {/* Footer */}
         <div className="flex items-center justify-between">
           {/* Left side - Meta info */}
@@ -323,8 +304,8 @@ export function TaskCard({ card, className }: TaskCardProps) {
         </div>
 
         {/* Special completion badge for done items */}
-        {card.status === 'done' && card.progress === 100 && (
-          <Badge className="mt-2 bg-green-100 text-green-800 border-green-200 animate-pulse">
+        {card.status === 'done' && (
+          <Badge className="mt-2 bg-green-100 text-green-800 border-green-200">
             ✓ Complete
           </Badge>
         )}

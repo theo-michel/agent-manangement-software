@@ -36,7 +36,7 @@ AGENT_ID = f"deep-search-func-{str(uuid.uuid4())[:8]}"
 async def run_deep_search(agent_request: AgentRequest) -> AgentResponse:
     """Runs the agent with a user's prompt."""
     start_time = time.time()
-    prompt = agent_request.prompt
+    prompt = agent_request.prompt+"\n\nThe final answer should be less then 50 sentences."
     logger.info(f"Agent running search for: '{prompt[:70]}...'")
 
     try:

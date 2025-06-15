@@ -31,7 +31,6 @@ export interface TaskCard {
   id: string;
   title: string;
   description?: string;
-  progress?: number;
   dueDate?: string;
   attachments?: number;
   comments?: number;
@@ -53,6 +52,8 @@ export interface TaskCard {
   createdAt?: Date;
   updatedAt?: Date;
   isParentTask?: boolean; // Whether this task has sub-tasks
+  coverImage?: string; // Will store the Base64 image string
+  isGeneratingImage?: boolean; // To show a loading state
 }
 
 export interface TaskLabel {

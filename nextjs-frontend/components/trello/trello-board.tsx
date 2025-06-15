@@ -198,13 +198,9 @@ export function TrelloBoard() {
         }
       }
 
-      // Calculate progress percentage
-      const progress = Math.round((completedSubTasks / totalSubTasks) * 100);
-      
-      // Update parent task progress
+      // Update parent task
       const updatedParentCard = {
         ...parentCard,
-        progress,
         updatedAt: new Date(),
       };
 
@@ -224,7 +220,7 @@ export function TrelloBoard() {
           console.log(`🎉 Parent task "${parentCard.title}" completed - all sub-tasks done!`);
         }
       } else {
-        // Update progress in current column
+        // Update parent task in current column
         newColumns[parentColumnIndex].cards[parentCardIndex] = updatedParentCard;
       }
 
@@ -725,7 +721,6 @@ export function TrelloBoard() {
       containerId: 'todo', // Always set to 'todo'
       assignees: [],
       labels: [],
-      progress: 0,
     };
     setSelectedCard(newCard);
     setIsModalOpen(true);
@@ -849,7 +844,6 @@ export function TrelloBoard() {
                 containerId: 'todo',
                 assignees: [],
                 labels: cardData.task_type ? [cardData.task_type] : [],
-                progress: 0,
                 autoCreated: true,
                 createdAt: new Date(),
                 isSubTask: true,
@@ -872,7 +866,7 @@ export function TrelloBoard() {
                 isLoading: false,
                 subTaskIds,
                 aiResponse: `AI created ${cardCount} sub-tasks - executing them now...`,
-                progress: 0, // 0% complete until sub-tasks are done
+
                 execution: {
                   ...newColumns[doingColumnIndex].cards[parentCardIndex].execution!,
                   status: 'executing' // Still executing (waiting for sub-tasks)
@@ -934,7 +928,6 @@ export function TrelloBoard() {
       containerId: 'todo',
       assignees: [],
       labels: [],
-      progress: 0,
     };
     setSelectedCard(newCard);
     setIsModalOpen(true);
