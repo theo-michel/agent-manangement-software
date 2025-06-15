@@ -64,7 +64,7 @@ async def create_new_card_from_prompt(
             raise HTTPException(status_code=400, detail="Prompt cant be empty.")
 
         try:
-            return await new_card_service.process_prompt(agent_request)
+            return await new_card_service.create_new_card_from_prompt(agent_request)
         except ValueError as e:
             # Catches user errors or bad output from the model (4xx error)
             raise HTTPException(status_code=400, detail=str(e))
