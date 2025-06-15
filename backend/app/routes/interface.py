@@ -2,7 +2,9 @@ from fastapi import APIRouter, HTTPException
 import logging
 
 from app.services.agent import new_card_service, deep_search_service
-from app.services.github.schema import AgentRequest, AgentResponse, NewCardAgentResponse
+from app.services.agent.image_generation_logic import generate_image_for_task
+from app.services.github.schema import AgentRequest, AgentResponse, NewCardAgentResponse, ImageGenerationResponse, \
+    ImageGenerationRequest
 from app.services.chat.service import ChatService
 from app.services.agent.service import AgentService
 from app.services.vapi.service import VapiService
@@ -101,19 +103,20 @@ async def perform_deep_search(
             status_code=500, detail="An internal server error occurred."
         )
 
-# exemple pour call outbound :
-
-# Données de test
-#     test_data = {
-#         "target_number": "+33611421334",  # Ton numéro
-#         "market_overview": "The European ed-tech market grew 23% last year, with France and Germany leading demand in AI-powered language tools, while competition in the UK intensifies. New startups are emerging with innovative solutions for personalized learning.",
-#         "name": "Grégoire",
-#         "action_to_take": "Schedule a follow-up meeting to discuss potential partnership opportunities in the French market"
-#     }
-
-# response = requests.post(
-#             endpoint,
-#             json=test_data,
-#             headers={"Content-Type": "application/json"},
-#             timeout=30
-#         )
+@router.post("/generate-image", response_model=ImageGenerationResponse)
+async def generate_image_endpoint(
+    request: ImageGenerationRequest,
+):
+    """
+    Generates an image based on a descriptive prompt using a text-to-image model.
+    """
+    try:
+        return await generate_image_for_task(request)
+    except RuntimeError as e:
+        # Catches backend service failures (e.g., HF API is down)
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        logger.exception(f"Unhandled exception in /generate-image endpoint: {e}")
+        raise HTTPException(
+            status_code=500, detail="An internal server error occurred."
+        )

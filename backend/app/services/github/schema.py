@@ -70,3 +70,22 @@ class NewCardAgentResponse(BaseModel):
     agent_id: str
     execution_time: float
     metadata: Dict[str, Any]
+
+class ImageGenerationRequest(BaseModel):
+    """Request model for generating an image based on a text prompt."""
+
+    prompt: str = Field(
+        ...,
+        description="A descriptive prompt for the image to be generated.",
+        min_length=10,
+    )
+
+class ImageGenerationResponse(BaseModel):
+    """
+    Response model containing the generated image as a Base64 string.
+    """
+
+    image_base64: str = Field(
+        ..., description="The generated image, encoded as a Base64 string."
+    )
+    model_id: str = Field(..., description="The model used for generation.")
