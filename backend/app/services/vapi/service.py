@@ -38,6 +38,8 @@ Guidelines:
 - Be concise, friendly and confident.
 - After the recap, ask something like: "Would you like to explore any point further?".
 - If the listener asks follow-up questions, answer helpfully.
+- Use the person's name when appropriate: {{name}}
+- Keep in mind the action to take: {{action_to_take}}
 
 Here is the Market Overview you must summarise:
 {{market_overview}}
@@ -61,7 +63,9 @@ Here is the Market Overview you must summarise:
                 },
                 assistant_overrides={
                     "variable_values": {
-                        "market_overview": request.market_overview
+                        "market_overview": request.market_overview,
+                        "name": request.name,
+                        "action_to_take": request.action_to_take
                     }
                 },
             )
@@ -74,6 +78,8 @@ Here is the Market Overview you must summarise:
             metadata = {
                 "target_number": request.target_number,
                 "market_overview_length": len(request.market_overview),
+                "name": request.name,
+                "action_to_take": request.action_to_take,
                 "phone_number_id": self.phone_number_id,
                 "assistant_id": self.assistant_id
             }
