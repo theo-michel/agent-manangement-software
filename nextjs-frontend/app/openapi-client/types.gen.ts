@@ -27,6 +27,30 @@ export type HTTPValidationError = {
 };
 
 /**
+ * Request model for generating an image based on a text prompt.
+ */
+export type ImageGenerationRequest = {
+  /**
+   * A descriptive prompt for the image to be generated.
+   */
+  prompt: string;
+};
+
+/**
+ * Response model containing the generated image as a Base64 string.
+ */
+export type ImageGenerationResponse = {
+  /**
+   * The generated image, encoded as a Base64 string.
+   */
+  image_base64: string;
+  /**
+   * The model used for generation.
+   */
+  model_id: string;
+};
+
+/**
  * The final response, containing a list of generated cards.
  */
 export type NewCardAgentResponse = {
@@ -128,3 +152,11 @@ export type PerformDeepSearchData = {
 export type PerformDeepSearchResponse = AgentResponse;
 
 export type PerformDeepSearchError = HTTPValidationError;
+
+export type GenerateImageEndpointData = {
+  body: ImageGenerationRequest;
+};
+
+export type GenerateImageEndpointResponse = ImageGenerationResponse;
+
+export type GenerateImageEndpointError = HTTPValidationError;
