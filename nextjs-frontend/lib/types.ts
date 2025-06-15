@@ -79,3 +79,23 @@ export interface AIResponse {
   success: boolean;
   error?: string;
 }
+
+export interface VapiCall {
+  id: string;
+  customer?: {
+    number?: string;
+  };
+  assistantId?: string;
+  startedAt: string;
+  endedAt?: string;
+  endedReason?: string;
+  transcript?: string;
+  messages?: VapiMessage[];
+}
+
+export interface VapiMessage {
+  id: string;
+  role: string;
+  content: string;
+  timestamp: string;
+}
