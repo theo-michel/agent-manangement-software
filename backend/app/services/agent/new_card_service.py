@@ -7,50 +7,55 @@ from typing import Dict, Any
 import anthropic
 from pydantic import ValidationError
 
-from app.services.github.schema import AgentRequest, NewCardAgentResponse, NewCardData
+# Using the requested import path
+from app.services.github.schema import (
+    AgentRequest,
+    NewCardAgentResponse,
+    NewCardData,
+)
 
 logger = logging.getLogger(__name__)
 
-def _get_system_prompt(self) -> str:
-    """The 'magic' prompt that instructs the LLM. Keep this powerful."""
-    return """
-    You are an expert project management assistant. Your only job is to analyze a user's request and transform it into a structured JSON object for a new task card.
+# --- One-Time Initialization ---
+# This client is created once when the module is first imported.
+claude_client = anthropic.AsyncAnthropic()
+AGENT_ID = f"new-card-func-{str(uuid.uuid4())[:8]}"
 
-    1.  **Analyze & Classify**: Determine if the request is a `research_task`. If it's not about research, you MUST respond with a JSON error object: `{"error": "I can only handle research tasks."}`.
-    2.  **Extract Details**: For a `research_task`, extract the `title`, `description`, and the `parameters` (`topics` and `scope`).
-    3.  **Format Output**: You MUST respond ONLY with a single, valid JSON object. Do not add any explanations or markdown formatting.
+
+def _get_system_prompt() -> str:
+    """The 'magic' prompt that instructs the LLM."""
+    return """
+    You are an expert project management assistant. Your only job is to analyze a user's request and transform it into a structured JSON object for a new task card. You MUST respond ONLY with a single, valid JSON object. Do not add any explanations or markdown formatting. If the request is not a research task, respond with `{"error": "I can only handle research tasks."}`.
     """
 
-async def process_prompt(
-    self, agent_request: AgentRequest
+
+async def create_new_card_from_prompt(
+    agent_request: AgentRequest,
 ) -> NewCardAgentResponse:
-    """Uses Claude to process the prompt and create a structured card."""
+    """Processes a prompt to create a structured card."""
     start_time = time.time()
-    self.logger.info(f"Agent processing prompt: '{agent_request.prompt[:70]}...'")
+    logger.info(f"Agent processing prompt: '{agent_request.prompt[:70]}...'")
 
     try:
-        message = await self.claude_client.messages.create(
-            model="claude-3-5-sonnet-20240620",
+        message = await claude_client.messages.create(
+            # model="claude-opus-4-20250514",
+            model="claude-sonnet-4-20250514",
             max_tokens=1024,
-            system=self._get_system_prompt(),
+            system=_get_system_prompt(),
             messages=[{"role": "user", "content": agent_request.prompt}],
         )
         response_text = message.content[0].text
         card_json = json.loads(response_text)
 
         if "error" in card_json:
-            # The model understood but rejected the prompt. This is a user error.
             raise ValueError(card_json["error"])
 
-        # Pydantic validates the structure. If it fails, it's a model error.
         card_data = NewCardData(**card_json)
 
     except (ValidationError, json.JSONDecodeError) as e:
-        self.logger.error(f"AI model returned invalid data: {e}")
-        raise ValueError("The AI model's output was malformed or invalid.")
+        raise ValueError(f"AI model returned invalid data: {e}")
     except anthropic.APIError as e:
-        self.logger.error(f"Anthropic API error: {e}")
-        raise RuntimeError("The AI service is currently unavailable.")
+        raise RuntimeError(f"AI service is currently unavailable: {e}")
 
     execution_time = time.time() - start_time
     metadata = {
@@ -61,7 +66,7 @@ async def process_prompt(
 
     return NewCardAgentResponse(
         card_data=card_data,
-        agent_id=self.agent_id,
+        agent_id=AGENT_ID,
         execution_time=execution_time,
         metadata=metadata,
     )

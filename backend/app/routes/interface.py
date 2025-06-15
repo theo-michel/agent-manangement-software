@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 import logging
 
-from app.services.agent import new_card_service
+from app.services.agent import new_card_service, deep_search_service
 from app.services.github.schema import AgentRequest, AgentResponse, NewCardAgentResponse
 from app.services.chat.service import ChatService
 from app.services.agent.service import AgentService
@@ -76,6 +76,28 @@ async def create_new_card_from_prompt(
                 status_code=500, detail="An internal server error occurred."
             )
 
+@router.post("/deep-search", response_model=AgentResponse)
+async def perform_deep_search(
+    agent_request: AgentRequest,
+):
+    """
+    Takes a prompt and uses a web-searching agent to find a
+    comprehensive answer.
+    """
+    if not agent_request.prompt or not agent_request.prompt.strip():
+        raise HTTPException(status_code=400, detail="Prompt cannot be empty.")
+
+    try:
+        return await deep_search_service.run_search(agent_request)
+    except RuntimeError as e:
+        # Catches backend service failures (e.g., agent execution)
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        # Catch-all for any other unexpected server error
+        logger.exception(f"Unhandled exception in /deep-search endpoint: {e}")
+        raise HTTPException(
+            status_code=500, detail="An internal server error occurred."
+        )
 
 # exemple pour call outbound :
 
