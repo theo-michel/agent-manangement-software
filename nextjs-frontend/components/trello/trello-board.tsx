@@ -15,8 +15,10 @@ import { DroppableColumn } from './droppable-column';
 import { DraggableCard } from './draggable-card';
 import { CardDetailModal } from './card-detail-modal';
 import { Button } from '@/components/ui/button';
-import { Plus, Users, Star, Shield, Zap } from 'lucide-react';
+import { Plus, Users, Star, Shield, Zap, Phone, Search } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Column, TaskCard } from '@/lib/types';
 import { createNewCardFromPrompt, NewCardAgentResponse } from '@/app/clientService';
 
@@ -32,6 +34,8 @@ export function TrelloBoard() {
   const [activeCard, setActiveCard] = useState<TaskCard | null>(null);
   const [selectedCard, setSelectedCard] = useState<TaskCard | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [phoneCallsEnabled, setPhoneCallsEnabled] = useState(true);
+  const [webSearchEnabled, setWebSearchEnabled] = useState(true);
   
   // Configure sensors with activation constraints
   const sensors = useSensors(
@@ -43,12 +47,7 @@ export function TrelloBoard() {
     })
   );
 
-  const teamMembers = [
-    { name: 'Alice', initials: 'AJ', color: 'bg-blue-500' },
-    { name: 'Bob', initials: 'BS', color: 'bg-green-500' },
-    { name: 'Carol', initials: 'CD', color: 'bg-purple-500' },
-    { name: 'David', initials: 'DW', color: 'bg-orange-500' },
-  ];
+
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
@@ -333,6 +332,21 @@ export function TrelloBoard() {
     setSelectedCard(null);
   }, []);
 
+  const handleNewTask = useCallback(() => {
+    const newCard: TaskCard = {
+      id: `card-${Date.now()}`,
+      title: '',
+      description: '',
+      status: 'todo',
+      containerId: 'todo',
+      assignees: [],
+      labels: [],
+      progress: 0,
+    };
+    setSelectedCard(newCard);
+    setIsModalOpen(true);
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-400 to-red-400">
       {/* Header */}
@@ -351,37 +365,50 @@ export function TrelloBoard() {
               <span className="text-white/90 text-sm">Acme, Inc.</span>
             </div>
             
-            <div className="flex items-center space-x-3">
-              {/* Team Members */}
-              <div className="flex -space-x-2">
-                {teamMembers.map((member, index) => (
-                  <Avatar key={index} className="w-8 h-8 border-2 border-white">
-                    <AvatarFallback className={`text-white text-xs font-medium ${member.color}`}>
-                      {member.initials}
-                    </AvatarFallback>
-                  </Avatar>
-                ))}
-                <Button
-                  size="sm"
-                  className="w-8 h-8 p-0 rounded-full bg-white/20 hover:bg-white/30 border-2 border-white text-white"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
+            <div className="flex items-center space-x-4">
+              {/* Feature Toggles */}
+              <div className="flex items-center space-x-4 mr-4">
+                <div className="flex items-center space-x-2">
+                  <Phone className="w-4 h-4 text-white/70" />
+                  <Label htmlFor="phone-toggle" className="text-white/90 text-sm cursor-pointer">
+                    Phone Calls
+                  </Label>
+                  <Switch
+                    id="phone-toggle"
+                    checked={phoneCallsEnabled}
+                    onCheckedChange={setPhoneCallsEnabled}
+                    className="data-[state=checked]:bg-green-500"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Search className="w-4 h-4 text-white/70" />
+                  <Label htmlFor="search-toggle" className="text-white/90 text-sm cursor-pointer">
+                    Web Search
+                  </Label>
+                  <Switch
+                    id="search-toggle"
+                    checked={webSearchEnabled}
+                    onCheckedChange={setWebSearchEnabled}
+                    className="data-[state=checked]:bg-blue-500"
+                  />
+                </div>
               </div>
 
+              {/* New Task Button */}
               <Button
-                size="sm"
-                className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                onClick={handleNewTask}
+                className="bg-green-500 hover:bg-green-600 text-white font-medium px-4 py-2"
               >
+                <Plus className="w-4 h-4 mr-2" />
+                New Task
+              </Button>
+
+              <Button className="bg-white/20 hover:bg-white/30 text-white border-white/30 px-3 py-2">
                 <Users className="w-4 h-4 mr-2" />
                 Invite
               </Button>
 
-              <Button
-                size="sm"
-                className="bg-white/10 hover:bg-white/20 text-white border-white/20"
-                variant="outline"
-              >
+              <Button className="bg-white/10 hover:bg-white/20 text-white border-white/20 px-3 py-2">
                 <Zap className="w-4 h-4 mr-2" />
                 +12
               </Button>
@@ -411,7 +438,6 @@ export function TrelloBoard() {
             {/* Add Another List Button */}
             <div className="flex-shrink-0">
               <Button
-                variant="ghost"
                 className="w-80 h-12 bg-white/10 hover:bg-white/20 text-white border border-white/20 justify-start"
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -438,6 +464,8 @@ export function TrelloBoard() {
         onClose={handleCloseModal}
         onSave={handleSaveCard}
         availableUsers={[]}
+        phoneCallsEnabled={phoneCallsEnabled}
+        webSearchEnabled={webSearchEnabled}
       />
     </div>
   );

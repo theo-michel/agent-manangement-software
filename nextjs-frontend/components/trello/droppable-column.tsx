@@ -117,20 +117,6 @@ export function DroppableColumn({ column, className, onCardClick, onAddCard }: D
         )}
       </div>
 
-      {/* Add Card Button - Only visible for TODO column */}
-      {column.id === 'todo' && (
-        <Button
-          onClick={() => onAddCard?.(column.id)}
-          className={cn(
-            "justify-start mt-2 transition-all duration-200 bg-transparent border-none",
-            "text-gray-600 hover:text-gray-800 hover:bg-gray-200/50",
-            isOver && "bg-blue-100 text-blue-700 hover:bg-blue-200"
-          )}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add a card
-        </Button>
-      )}
     </div>
   );
 } 

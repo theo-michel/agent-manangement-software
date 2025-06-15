@@ -36,6 +36,8 @@ interface CardDetailModalProps {
   onClose: () => void;
   onSave: (updatedCard: TaskCard) => void;
   availableUsers: User[];
+  phoneCallsEnabled: boolean;
+  webSearchEnabled: boolean;
 }
 
 export function CardDetailModal({
@@ -44,6 +46,8 @@ export function CardDetailModal({
   onClose,
   onSave,
   availableUsers,
+  phoneCallsEnabled,
+  webSearchEnabled,
 }: CardDetailModalProps) {
   const [editedCard, setEditedCard] = useState<TaskCard | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -195,55 +199,35 @@ export function CardDetailModal({
               </div>
             )}
 
-            {/* Progress */}
+            {/* Feature Settings */}
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 block flex items-center gap-2">
                 <BarChart3 className="w-4 h-4" />
-                Progress
+                Feature Settings
               </label>
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">
-                    {editedCard.progress || 0}% Complete
+                <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <span className="text-sm text-gray-600 flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Phone Calls
                   </span>
-                  {isEditing && (
-                    <div className="flex gap-2">
-                      {[0, 25, 50, 75, 100].map((value) => (
-                        <Button
-                          key={value}
-                          variant={editedCard.progress === value ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => updateProgress(value)}
-                        >
-                          {value}%
-                        </Button>
-                      ))}
-                    </div>
-                  )}
+                  <Badge className={phoneCallsEnabled ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}>
+                    {phoneCallsEnabled ? "Enabled" : "Disabled"}
+                  </Badge>
                 </div>
-                <Progress value={editedCard.progress || 0} className="h-2" />
+                <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <span className="text-sm text-gray-600 flex items-center gap-2">
+                    <MessageCircle className="w-4 h-4" />
+                    Web Search
+                  </span>
+                  <Badge className={webSearchEnabled ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-600"}>
+                    {webSearchEnabled ? "Enabled" : "Disabled"}
+                  </Badge>
+                </div>
               </div>
             </div>
 
-            {/* Labels */}
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
-                Labels
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {editedCard.labels.map((label) => (
-                  <Badge
-                    key={label.id}
-                    className={cn("text-white", label.color)}
-                  >
-                    {label.name}
-                  </Badge>
-                ))}
-                {editedCard.labels.length === 0 && (
-                  <p className="text-gray-400 text-sm">No labels assigned</p>
-                )}
-              </div>
-            </div>
+
 
             {/* Action Buttons */}
             {isEditing && (
