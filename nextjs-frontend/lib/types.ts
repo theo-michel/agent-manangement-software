@@ -31,7 +31,6 @@ export interface TaskCard {
   id: string;
   title: string;
   description?: string;
-  progress?: number;
   dueDate?: string;
   attachments?: number;
   comments?: number;

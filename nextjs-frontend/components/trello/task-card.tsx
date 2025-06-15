@@ -3,7 +3,6 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { TaskCard as TaskCardType } from '@/lib/types';
 import { Calendar, MessageCircle, Paperclip, Loader2, Sparkles, Link, Bot, Clock, Phone, Search } from 'lucide-react';
@@ -21,12 +20,6 @@ export function TaskCard({ card, className }: TaskCardProps) {
       month: 'short', 
       day: 'numeric' 
     });
-  };
-
-  const getProgressColor = (progress: number) => {
-    if (progress >= 100) return 'bg-green-500';
-    if (progress >= 50) return 'bg-yellow-500';
-    return 'bg-blue-500';
   };
 
   const getTaskTypeBadge = (taskType: string) => {
@@ -260,28 +253,6 @@ export function TaskCard({ card, className }: TaskCardProps) {
           </div>
         )}
 
-        {/* Progress Bar */}
-        {card.progress !== undefined && (
-          <div className="mb-3">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-gray-600">Progress</span>
-              <span className="text-xs text-gray-600 font-medium">{card.progress}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-              <div
-                className={cn(
-                  "h-1.5 rounded-full transition-all duration-500 ease-out", 
-                  getProgressColor(card.progress)
-                )}
-                style={{ 
-                  width: `${card.progress}%`,
-                  transformOrigin: 'left center'
-                }}
-              />
-            </div>
-          </div>
-        )}
-
         {/* Footer */}
         <div className="flex items-center justify-between">
           {/* Left side - Meta info */}
@@ -333,8 +304,8 @@ export function TaskCard({ card, className }: TaskCardProps) {
         </div>
 
         {/* Special completion badge for done items */}
-        {card.status === 'done' && card.progress === 100 && (
-          <Badge className="mt-2 bg-green-100 text-green-800 border-green-200 animate-pulse">
+        {card.status === 'done' && (
+          <Badge className="mt-2 bg-green-100 text-green-800 border-green-200">
             ✓ Complete
           </Badge>
         )}

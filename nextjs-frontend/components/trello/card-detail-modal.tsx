@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
+
 import { TaskCard, User } from '@/lib/types';
 import {
   Calendar,
@@ -125,9 +125,7 @@ const handleGenerateImage = async () => {
   }
 };
 
-  const updateProgress = (progress: number) => {
-    setEditedCard({ ...editedCard, progress });
-  };
+
 
   const toggleAssignee = (user: User) => {
     const isAssigned = editedCard.assignees.some(a => a.id === user.id);
