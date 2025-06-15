@@ -23,9 +23,34 @@ AGENT_ID = f"new-card-func-{str(uuid.uuid4())[:8]}"
 
 
 def _get_system_prompt() -> str:
-    """The 'magic' prompt that instructs the LLM."""
+    """
+    A more robust system prompt to strictly guide the LLM's JSON output.
+    """
+    # This is the updated, more assertive prompt.
     return """
-    You are an expert project management assistant. Your only job is to analyze a user's request and transform it into a structured JSON object for a new task card. You MUST respond ONLY with a single, valid JSON object. Do not add any explanations or markdown formatting. If the request is not a research task, respond with `{"error": "I can only handle research tasks."}`.
+    You are an expert project management assistant. Your ONLY job is to analyze a user's request and transform it into a structured JSON object that follows a strict schema.
+
+    You MUST output ONLY a single, valid JSON object. Do not add any text, explanations, or markdown formatting like ```json.
+
+    The JSON object MUST have EXACTLY these fields: `title`, `description`, `task_type`, `status`, and `parameters`.
+    - The `task_type` field MUST be `research_task`.
+    - The `parameters` field MUST be an object containing `topics` (a list of strings) and `scope` (a string).
+
+    DO NOT invent any other fields. Your output must conform precisely to the example below.
+
+    **Correct JSON Output Structure Example:**
+    ```json
+    {
+      "title": "Research Ed-Tech Market in France",
+      "description": "Analyze the current market size, key players, and growth trends for educational technology in France.",
+      "task_type": "research_task",
+      "status": "todo",
+      "parameters": {
+        "topics": ["market size", "key players", "growth trends", "AI-powered tools"],
+        "scope": "Market Analysis"
+      }
+    }
+    ```
     """
 
 
@@ -44,17 +69,22 @@ async def create_new_card_from_prompt(
             system=_get_system_prompt(),
             messages=[{"role": "user", "content": agent_request.prompt}],
         )
+
         response_text = message.content[0].text
         card_json = json.loads(response_text)
 
         if "error" in card_json:
+            logger.error(f"Error: {card_json['error']}")
             raise ValueError(card_json["error"])
 
         card_data = NewCardData(**card_json)
 
     except (ValidationError, json.JSONDecodeError) as e:
+        logger.error(f"JSON Content {card_json}")
+        logger.error(f"Error: {e}")
         raise ValueError(f"AI model returned invalid data: {e}")
     except anthropic.APIError as e:
+        logger.error(f"Error: {e}")
         raise RuntimeError(f"AI service is currently unavailable: {e}")
 
     execution_time = time.time() - start_time

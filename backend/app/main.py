@@ -1,3 +1,11 @@
+import logging, sys
+
+logging.basicConfig(
+    level=logging.INFO,                        # show INFO+ globally
+    format="%(asctime)s %(levelname)-8s %(name)s: %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes.interface import router as chat_router
