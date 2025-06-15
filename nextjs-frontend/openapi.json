@@ -95,7 +95,7 @@
           "chat"
         ],
         "summary": "Create New Card From Prompt",
-        "description": "Takes a natural language prompt and uses a smolagent to create a\nstructured new task card.",
+        "description": "Takes a natural language promptand uses a smolagent to create a\nstructured new task card.",
         "operationId": "create_new_card_from_prompt",
         "requestBody": {
           "content": {
@@ -252,7 +252,11 @@
       "NewCardAgentResponse": {
         "properties": {
           "card_data": {
-            "$ref": "#/components/schemas/NewCardData"
+            "items": {
+              "$ref": "#/components/schemas/NewCardData"
+            },
+            "type": "array",
+            "title": "Card Data"
           },
           "agent_id": {
             "type": "string",
@@ -275,10 +279,15 @@
           "metadata"
         ],
         "title": "NewCardAgentResponse",
-        "description": "The final, structured response from our endpoint."
+        "description": "The final response, containing a list of generated cards."
       },
       "NewCardData": {
         "properties": {
+          "card_id": {
+            "type": "string",
+            "title": "Card Id",
+            "description": "A unique temporary ID for this card within the response (e.g., 'task-1')."
+          },
           "title": {
             "type": "string",
             "title": "Title"
@@ -296,19 +305,24 @@
             "title": "Status",
             "default": "todo"
           },
-          "parameters": {
-            "$ref": "#/components/schemas/ResearchParameters"
+          "dependencies": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Dependencies",
+            "description": "List of card_ids this card depends on."
           }
         },
         "type": "object",
         "required": [
+          "card_id",
           "title",
           "description",
-          "task_type",
-          "parameters"
+          "task_type"
         ],
         "title": "NewCardData",
-        "description": "The structured data for our Kanban card. This is our target output."
+        "description": "Defines the structure for a single task card, now with dependency tracking."
       },
       "OutboundCallRequest": {
         "properties": {
@@ -404,32 +418,10 @@
         ],
         "title": "OutboundCallResponse"
       },
-      "ResearchParameters": {
-        "properties": {
-          "topics": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "minItems": 1,
-            "title": "Topics"
-          },
-          "scope": {
-            "type": "string",
-            "title": "Scope"
-          }
-        },
-        "type": "object",
-        "required": [
-          "topics",
-          "scope"
-        ],
-        "title": "ResearchParameters",
-        "description": "Parameters for a research task. Pydantic validates this for us."
-      },
       "TaskType": {
         "type": "string",
         "enum": [
+          "reporting_task",
           "research_task"
         ],
         "title": "TaskType",

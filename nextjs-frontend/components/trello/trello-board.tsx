@@ -244,7 +244,7 @@ export function TrelloBoard() {
 
             try {
         // Call AI endpoint
-        const response: NewCardAgentResponse = await createNewCardFromPrompt({
+        const axiosResponse = await createNewCardFromPrompt({
           body: {
             prompt: prompt,
             context: {
@@ -252,6 +252,12 @@ export function TrelloBoard() {
             }
           }
         });
+        
+        if (!axiosResponse.data) {
+          throw new Error('No data received from AI service');
+        }
+        
+        const response: NewCardAgentResponse = axiosResponse.data;
         console.log("AI Response:", response);
         
         setColumns(prevColumns => {

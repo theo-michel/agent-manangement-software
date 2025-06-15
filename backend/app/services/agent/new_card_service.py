@@ -76,8 +76,8 @@ async def create_new_card_from_prompt(
 
     try:
         message = await claude_client.messages.create(
-            model="claude-3-5-sonnet-20240620",
-            max_tokens=3072,  # Increased for more complex structures
+            model="claude-sonnet-4-20250514",
+            max_tokens=5000,  # Increased for more complex structures
             system=_get_system_prompt(),
             messages=[{"role": "user", "content": agent_request.prompt}],
         )

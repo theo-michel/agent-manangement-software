@@ -63,7 +63,7 @@ export const triggerOutboundCall = <ThrowOnError extends boolean = false>(
 
 /**
  * Create New Card From Prompt
- * Takes a natural language prompt and uses a smolagent to create a
+ * Takes a natural language promptand uses a smolagent to create a
  * structured new task card.
  */
 export const createNewCardFromPrompt = <ThrowOnError extends boolean = false>(
