@@ -14,6 +14,7 @@ import {
 import { DroppableColumn } from './droppable-column';
 import { DraggableCard } from './draggable-card';
 import { CardDetailModal } from './card-detail-modal';
+import { SearchProcessViewer } from './search-process-viewer';
 import { Button } from '@/components/ui/button';
 import { Plus, Users, Star, Shield, Zap, Phone, Search } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -38,6 +39,8 @@ export function TrelloBoard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [phoneCallsEnabled, setPhoneCallsEnabled] = useState(true);
   const [webSearchEnabled, setWebSearchEnabled] = useState(true);
+  const [searchProcessVisible, setSearchProcessVisible] = useState(false);
+  const [currentSearchQuery, setCurrentSearchQuery] = useState<string>('');
   const [executingTasks, setExecutingTasks] = useState<Map<string, TaskExecution>>(new Map());
   const [callCount, setCallCount] = useState(0); // Track number of calls made
   
@@ -450,6 +453,10 @@ export function TrelloBoard() {
            
            console.log(`🔍 Performing deep search for: "${searchPrompt}"`);
            
+           // Show search process viewer
+           setCurrentSearchQuery(searchPrompt);
+           setSearchProcessVisible(true);
+           
            // Call deep search API using SDK
            const response = await performDeepSearch({
              body: {
@@ -459,6 +466,9 @@ export function TrelloBoard() {
 
            apiResponse = response.data;
            console.log(`✅ Deep search completed for "${subTask.title}":`, apiResponse);
+           
+           // Keep search process viewer visible - don't auto-hide
+           // Users can manually close it if they want
            
          } else if (taskType === 'phone_task') {
            executionType = 'phone_call';
@@ -1037,15 +1047,7 @@ export function TrelloBoard() {
               />
             ))}
             
-            {/* Add Another List Button */}
-            <div className="flex-shrink-0">
-              <Button
-                className="w-80 h-12 bg-white/10 hover:bg-white/20 text-white border border-white/20 justify-start"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add another list
-              </Button>
-            </div>
+
           </div>
 
           {/* Drag Overlay for smooth animation */}
@@ -1068,6 +1070,13 @@ export function TrelloBoard() {
         availableUsers={[]}
         phoneCallsEnabled={phoneCallsEnabled}
         webSearchEnabled={webSearchEnabled}
+      />
+
+      {/* Search Process Viewer */}
+      <SearchProcessViewer
+        isVisible={searchProcessVisible}
+        searchQuery={currentSearchQuery}
+        onClose={() => setSearchProcessVisible(false)}
       />
     </div>
   );

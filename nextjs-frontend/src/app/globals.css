@@ -69,6 +69,77 @@
 }
 
 @layer components {
+  /* Custom Scrollbar Styles */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
+    background-color: rgb(209 213 219);
+    border-radius: 0.375rem;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  
+  .scrollbar-track-transparent::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+  
+  .hover\:scrollbar-thumb-gray-400:hover::-webkit-scrollbar-thumb {
+    background-color: rgb(156 163 175);
+  }
+  
+  /* Smooth scrolling for all elements */
+  .scroll-smooth {
+    scroll-behavior: smooth;
+  }
+
+  /* Better text wrapping for long URLs and content */
+  .break-all {
+    word-break: break-all;
+    overflow-wrap: anywhere;
+  }
+
+  /* Ensure pre elements don't overflow */
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  /* SearchProcessViewer specific styles */
+  .search-process-content {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    hyphens: auto;
+  }
+
+  .search-process-content pre {
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .search-process-content code {
+    max-width: 100%;
+    display: block;
+    overflow-x: auto;
+  }
+
+  /* Force text to wrap in containers */
+  .force-wrap {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+    max-width: 100%;
+  }
+
   /* Drag and Drop Animations */
   .drag-overlay {
     transform-origin: center;
