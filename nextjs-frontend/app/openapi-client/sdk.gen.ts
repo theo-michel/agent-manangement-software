@@ -18,6 +18,9 @@ import type {
   PerformDeepSearchData,
   PerformDeepSearchError,
   PerformDeepSearchResponse,
+  GenerateImageEndpointData,
+  GenerateImageEndpointError,
+  GenerateImageEndpointResponse,
 } from "./types.gen";
 
 export const client = createClient(createConfig());
@@ -94,5 +97,22 @@ export const performDeepSearch = <ThrowOnError extends boolean = false>(
   >({
     ...options,
     url: "/chat/deep-search",
+  });
+};
+
+/**
+ * Generate Image Endpoint
+ * Generates an image based on a descriptive prompt using a text-to-image model.
+ */
+export const generateImageEndpoint = <ThrowOnError extends boolean = false>(
+  options: OptionsLegacyParser<GenerateImageEndpointData, ThrowOnError>,
+) => {
+  return (options?.client ?? client).post<
+    GenerateImageEndpointResponse,
+    GenerateImageEndpointError,
+    ThrowOnError
+  >({
+    ...options,
+    url: "/chat/generate-image",
   });
 };

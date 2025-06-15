@@ -85,44 +85,44 @@ const handleGenerateImage = async () => {
   const cardWithLoading = { ...editedCard, isGeneratingImage: true };
   setEditedCard(cardWithLoading);
   onSave(cardWithLoading);
+  return;
+  // try {
+  //   // 2. Create a descriptive prompt
+  //   const prompt = `A digital art banner for a project task card titled: "${editedCard.title}". Description: ${editedCard.description || 'No description.'}. Style: vibrant, professional, slightly abstract.`;
 
-  try {
-    // 2. Create a descriptive prompt
-    const prompt = `A digital art banner for a project task card titled: "${editedCard.title}". Description: ${editedCard.description || 'No description.'}. Style: vibrant, professional, slightly abstract.`;
+  //   // 3. Call the API
+  //   const response = await generateImageEndpoint({
+  //     body: {
+  //       prompt: prompt,
+  //     },
+  //   });
 
-    // 3. Call the API
-    const response = await generateImageEndpoint({
-      body: {
-        prompt: prompt,
-      },
-    });
+  //   // --- THIS IS THE FIX ---
+  //   // 4. Add a "Type Guard" to safely handle the response.
+  //   if (!response.data) {
+  //     // If there's no data, it means an error occurred.
+  //     // The generated client might put error details in `response.error`.
+  //     console.error("Image generation failed:", response.error || "No data in response");
+  //     throw new Error("Failed to generate image: No data received.");
+  //   }
+  //   // --- END OF FIX ---
 
-    // --- THIS IS THE FIX ---
-    // 4. Add a "Type Guard" to safely handle the response.
-    if (!response.data) {
-      // If there's no data, it means an error occurred.
-      // The generated client might put error details in `response.error`.
-      console.error("Image generation failed:", response.error || "No data in response");
-      throw new Error("Failed to generate image: No data received.");
-    }
-    // --- END OF FIX ---
+  //   // After the guard clause, TypeScript knows `response.data` is defined.
+  //   // The error TS18048 will now be gone.
+  //   const cardWithImage = {
+  //     ...cardWithLoading,
+  //     coverImage: response.data.image_base64,
+  //     isGeneratingImage: false,
+  //   };
+  //   setEditedCard(cardWithImage);
+  //   onSave(cardWithImage);
 
-    // After the guard clause, TypeScript knows `response.data` is defined.
-    // The error TS18048 will now be gone.
-    const cardWithImage = {
-      ...cardWithLoading,
-      coverImage: response.data.image_base64,
-      isGeneratingImage: false,
-    };
-    setEditedCard(cardWithImage);
-    onSave(cardWithImage);
-
-  } catch (error) {
-    console.error("Image generation failed:", error);
-    const cardWithError = { ...editedCard, isGeneratingImage: false };
-    setEditedCard(cardWithError);
-    onSave(cardWithError);
-  }
+  // } catch (error) {
+  //   console.error("Image generation failed:", error);
+  //   const cardWithError = { ...editedCard, isGeneratingImage: false };
+  //   setEditedCard(cardWithError);
+  //   onSave(cardWithError);
+  // }
 };
 
 

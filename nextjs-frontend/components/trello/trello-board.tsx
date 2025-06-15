@@ -57,7 +57,7 @@ export function TrelloBoard() {
     if (callCount === 0) {
       return '+33643451397'; // Théo's number for first call
     } else {
-      return '+33651540270'; // Yoan's number for subsequent calls
+      return '+33642406872'; // Yoan's number for subsequent calls
     }
   }, [callCount]);
 
@@ -491,21 +491,48 @@ export function TrelloBoard() {
            
            console.log(`📞 Making outbound call #${callCount + 1} to ${contactName} (${targetNumber}) for: "${taskTitle}"`);
            
-           // Call outbound call API using SDK with task-specific parameters
-           const response = await triggerOutboundCall({
-             body: {
-               target_number: targetNumber,
-               market_overview: taskDescription,
-               name: contactName,
-               action_to_take: taskTitle,
-             },
-           });
+           // Retry logic for rate limiting
+           let retryCount = 0;
+           const maxRetries = 3;
+           let callSuccessful = false;
+           
+           while (!callSuccessful && retryCount < maxRetries) {
+             try {
+               // Call outbound call API using SDK with task-specific parameters
+               const response = await triggerOutboundCall({
+                 body: {
+                   target_number: targetNumber,
+                   market_overview: taskDescription,
+                   name: contactName,
+                   action_to_take: taskTitle,
+                 },
+               });
 
-           // Increment call count after successful call initiation
-           setCallCount(prev => prev + 1);
+               // Increment call count after successful call initiation
+               setCallCount(prev => prev + 1);
 
-           apiResponse = response.data;
-           console.log(`✅ Outbound call completed for "${subTask.title}":`, apiResponse);
+               apiResponse = response.data;
+               callSuccessful = true;
+               console.log(`✅ Outbound call completed for "${subTask.title}":`, apiResponse);
+               
+             } catch (callError: any) {
+               retryCount++;
+               
+               // Check if it's a rate limiting error
+               const isRateLimited = callError?.response?.status === 429 || 
+                                   callError?.message?.includes('429') ||
+                                   callError?.message?.includes('Too Many Requests');
+               
+               if (isRateLimited && retryCount < maxRetries) {
+                 const backoffDelay = Math.pow(2, retryCount) * 5000; // Exponential backoff: 5s, 10s, 20s
+                 console.log(`⚠️ Rate limited. Retrying in ${backoffDelay/1000} seconds... (Attempt ${retryCount}/${maxRetries})`);
+                 await new Promise(resolve => setTimeout(resolve, backoffDelay));
+               } else {
+                 // Re-throw the error if it's not rate limiting or we've exhausted retries
+                 throw callError;
+               }
+             }
+           }
            
          } else {
            // Unknown task type, treat as general AI processing
@@ -556,14 +583,26 @@ export function TrelloBoard() {
           return newColumns;
         });
         
-        // Add delay between executions for better UX
+        // Add delay between executions for better UX and rate limiting
         if (i < sortedTaskIds.length - 1) {
-          console.log(`⏳ Waiting 3 seconds before next task...`);
-          await new Promise(resolve => setTimeout(resolve, 3000));
+          // Longer delay for phone tasks to avoid rate limiting
+          const delayTime = executionType === 'phone_call' ? 10000 : 3000;
+          console.log(`⏳ Waiting ${delayTime/1000} seconds before next task...`);
+          await new Promise(resolve => setTimeout(resolve, delayTime));
         }
         
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to execute sub-task';
+        let errorMessage = error instanceof Error ? error.message : 'Failed to execute sub-task';
+        
+        // Provide more user-friendly error messages for common issues
+        if (errorMessage.includes('429') || errorMessage.includes('Too Many Requests')) {
+          errorMessage = 'Rate limited by phone service. Please wait before making more calls.';
+        } else if (errorMessage.includes('Phone calls are disabled')) {
+          errorMessage = 'Phone calls are currently disabled. Enable them in settings.';
+        } else if (errorMessage.includes('Web search is disabled')) {
+          errorMessage = 'Web search is currently disabled. Enable it in settings.';
+        }
+        
         console.error(`❌ Sub-task "${subTaskId}" failed:`, errorMessage);
         
         // Fail the sub-task execution
