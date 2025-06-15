@@ -36,7 +36,8 @@ def _get_system_prompt() -> str:
     2.  Fill out the card details (`title`, `description`, etc.).
     3.  Determine the `task_type`. Use `research_task` for investigation and `phone_task` for calling experts or team members to inform them of results.
     4.  Crucially, for any card that depends on another, add the prerequisite card's `card_id` to its `dependencies` list. The first task(s) should have an empty `dependencies` list.
-
+    
+    Only create one research task maximum.
     **Correct JSON Output Structure Example:**
     ```json
     {

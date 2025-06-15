@@ -90,7 +90,7 @@ async def perform_deep_search(
         raise HTTPException(status_code=400, detail="Prompt cannot be empty.")
 
     try:
-        return await deep_search_service.run_search(agent_request)
+        return await deep_search_service.run_deep_search(agent_request)
     except RuntimeError as e:
         # Catches backend service failures (e.g., agent execution)
         raise HTTPException(status_code=503, detail=str(e))
