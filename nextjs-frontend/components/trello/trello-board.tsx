@@ -39,6 +39,7 @@ export function TrelloBoard() {
   const [phoneCallsEnabled, setPhoneCallsEnabled] = useState(true);
   const [webSearchEnabled, setWebSearchEnabled] = useState(true);
   const [executingTasks, setExecutingTasks] = useState<Map<string, TaskExecution>>(new Map());
+  const [callCount, setCallCount] = useState(0); // Track number of calls made
   
   // Subscribe to execution service updates
   useEffect(() => {
@@ -47,6 +48,24 @@ export function TrelloBoard() {
     });
     return unsubscribe;
   }, []);
+
+  // Get the appropriate phone number based on call count
+  const getPhoneNumber = useCallback(() => {
+    if (callCount === 0) {
+      return '+33643451397'; // Théo's number for first call
+    } else {
+      return '+33651540270'; // Yoan's number for subsequent calls
+    }
+  }, [callCount]);
+
+  // Get the appropriate name based on call count
+  const getContactName = useCallback(() => {
+    if (callCount === 0) {
+      return 'Théo'; // First call to Théo
+    } else {
+      return 'Yoan'; // Subsequent calls to Yoan
+    }
+  }, [callCount]);
 
   // Automated card movement functions
   const moveCardToColumn = useCallback((cardId: string, targetColumn: 'todo' | 'doing' | 'done') => {
@@ -460,17 +479,24 @@ export function TrelloBoard() {
            const taskDescription = subTask.description || '';
            const taskTitle = subTask.title;
            
-           console.log(`📞 Making outbound call for: "${taskTitle}"`);
+           // Get the appropriate phone number and name based on call count
+           const targetNumber = getPhoneNumber();
+           const contactName = getContactName();
+           
+           console.log(`📞 Making outbound call #${callCount + 1} to ${contactName} (${targetNumber}) for: "${taskTitle}"`);
            
            // Call outbound call API using SDK with task-specific parameters
            const response = await triggerOutboundCall({
              body: {
-               target_number: '+33643451397', // Default number, could be extracted from task
+               target_number: targetNumber,
                market_overview: taskDescription,
-               name: 'Théo', // Could be extracted from task
+               name: contactName,
                action_to_take: taskTitle,
              },
            });
+
+           // Increment call count after successful call initiation
+           setCallCount(prev => prev + 1);
 
            apiResponse = response.data;
            console.log(`✅ Outbound call completed for "${subTask.title}":`, apiResponse);
@@ -561,7 +587,7 @@ export function TrelloBoard() {
     }
     
     console.log(`🎉 Completed sequential execution of all ${sortedTaskIds.length} sub-tasks`);
-  }, [columns, sortTasksByDependencyOrder, startTaskExecution, completeTaskExecution, failTaskExecution, phoneCallsEnabled, webSearchEnabled]);
+  }, [columns, sortTasksByDependencyOrder, startTaskExecution, completeTaskExecution, failTaskExecution, phoneCallsEnabled, webSearchEnabled, callCount, getPhoneNumber, getContactName]);
    
   // Configure sensors with activation constraints
   const sensors = useSensors(
@@ -946,6 +972,22 @@ export function TrelloBoard() {
                     onCheckedChange={setPhoneCallsEnabled}
                     className="data-[state=checked]:bg-green-500"
                   />
+                  {phoneCallsEnabled && (
+                    <div className="flex items-center space-x-1">
+                      <span className="text-white/70 text-xs bg-white/10 px-2 py-1 rounded">
+                        Next: {getContactName()}
+                      </span>
+                      {callCount > 0 && (
+                        <button
+                          onClick={() => setCallCount(0)}
+                          className="text-white/50 hover:text-white/80 text-xs bg-white/10 hover:bg-white/20 px-1 py-1 rounded"
+                          title="Reset to call Théo first"
+                        >
+                          ↻
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center space-x-2">
                   <Search className="w-4 h-4 text-white/70" />
