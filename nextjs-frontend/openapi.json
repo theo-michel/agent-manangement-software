@@ -53,7 +53,7 @@
           "chat"
         ],
         "summary": "Trigger Outbound Call",
-        "description": "D\u00e9clenche un appel sortant avec une Market Overview.\n\n- **target_number**: Num\u00e9ro de t\u00e9l\u00e9phone du destinataire (format E.164, ex: +33611421334)\n- **market_overview**: Texte de la Market Overview \u00e0 r\u00e9sumer pendant l'appel",
+        "description": "D\u00e9clenche un appel sortant avec une Market Overview.\n\n- **target_number**: Num\u00e9ro de t\u00e9l\u00e9phone du destinataire (format E.164, ex: +33611421334)\n- **market_overview**: Texte de la Market Overview \u00e0 r\u00e9sumer pendant l'appel\n- **name**: Nom de la personne \u00e0 qui on passe l'appel\n- **action_to_take**: Action \u00e0 entreprendre pendant l'appel",
         "operationId": "trigger_outbound_call",
         "requestBody": {
           "content": {
@@ -321,16 +321,30 @@
             "type": "string",
             "title": "Market Overview",
             "description": "Texte de la Market Overview \u00e0 r\u00e9sumer"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Nom de la personne \u00e0 qui on passe l'appel"
+          },
+          "action_to_take": {
+            "type": "string",
+            "title": "Action To Take",
+            "description": "Action \u00e0 entreprendre pendant l'appel"
           }
         },
         "type": "object",
         "required": [
           "target_number",
-          "market_overview"
+          "market_overview",
+          "name",
+          "action_to_take"
         ],
         "title": "OutboundCallRequest",
         "example": {
+          "action_to_take": "Schedule a follow-up meeting to discuss investment opportunities",
           "market_overview": "The European ed-tech market grew 23% last year, with France and Germany leading demand in AI-powered language tools, while competition in the UK intensifies.",
+          "name": "John Doe",
           "target_number": "+33611421334"
         }
       },

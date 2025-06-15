@@ -45,6 +45,8 @@ export const triggerAgent = <ThrowOnError extends boolean = false>(
  *
  * - **target_number**: Numéro de téléphone du destinataire (format E.164, ex: +33611421334)
  * - **market_overview**: Texte de la Market Overview à résumer pendant l'appel
+ * - **name**: Nom de la personne à qui on passe l'appel
+ * - **action_to_take**: Action à entreprendre pendant l'appel
  */
 export const triggerOutboundCall = <ThrowOnError extends boolean = false>(
   options: OptionsLegacyParser<TriggerOutboundCallData, ThrowOnError>,

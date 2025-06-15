@@ -58,6 +58,14 @@ export type OutboundCallRequest = {
    * Texte de la Market Overview à résumer
    */
   market_overview: string;
+  /**
+   * Nom de la personne à qui on passe l'appel
+   */
+  name: string;
+  /**
+   * Action à entreprendre pendant l'appel
+   */
+  action_to_take: string;
 };
 
 export type OutboundCallResponse = {
