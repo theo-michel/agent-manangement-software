@@ -14,11 +14,12 @@ import {
 import { DroppableColumn } from './droppable-column';
 import { DraggableCard } from './draggable-card';
 import { CardDetailModal } from './card-detail-modal';
-import { triggerAgent } from '@/app/clientService';
+import { createNewCardFromPrompt } from '@/app/openapi-client';
+import type { NewCardAgentResponse } from '@/app/openapi-client/types.gen';
 import { Button } from '@/components/ui/button';
 import { Plus, Users, Star, Shield, Zap } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Column, TaskCard, AICardSuggestion, AIResponse } from '@/lib/types';
+import { Column, TaskCard } from '@/lib/types';
 
 // Initialize with empty columns
 const initialColumns: Column[] = [
@@ -236,79 +237,59 @@ export function TrelloBoard() {
         return newColumns;
       });
 
-      try {
+            try {
         // Call AI endpoint
-        const aiResult: AIResponse = await triggerAgent({
-          prompt: prompt,
-          context: {
-            card: updatedCard
+        const response = await createNewCardFromPrompt({
+          body: {
+            prompt: prompt,
+            context: {
+              card: updatedCard
+            }
           }
         });
+
+        console.log(response)
         
-        if (aiResult.success) {
-          // Update original card with AI response and create new cards
-          setColumns(prevColumns => {
-            const newColumns = [...prevColumns];
-            
-            // Update original card with AI response
-            const targetColumnIndex = newColumns.findIndex(col => col.id === updatedCard.containerId);
-            if (targetColumnIndex !== -1) {
-              const cardIndex = newColumns[targetColumnIndex].cards.findIndex(card => card.id === updatedCard.id);
-              if (cardIndex !== -1) {
-                newColumns[targetColumnIndex].cards[cardIndex] = {
-                  ...newColumns[targetColumnIndex].cards[cardIndex],
-                  isLoading: false,
-                  aiResponse: aiResult.textualResponse
-                };
-              }
-            }
-            
-            // Create new cards from AI suggestions
-            const todoColumnIndex = newColumns.findIndex(col => col.id === 'todo');
-            if (todoColumnIndex !== -1 && aiResult.cardsToCreate.length > 0) {
-              const newCards = aiResult.cardsToCreate.map((suggestion: AICardSuggestion) => ({
-                id: `card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                title: suggestion.title,
-                description: suggestion.description,
-                status: 'todo' as const,
-                containerId: 'todo',
-                assignees: suggestion.assignees || [],
-                labels: suggestion.labels || [],
-                progress: 0,
-                dependsOn: suggestion.dependsOn || [],
-                blockedBy: suggestion.blockedBy || [],
-                isSubTask: suggestion.isSubTask || false,
-                parentTaskId: suggestion.parentTaskId,
-                autoCreated: true,
-                dueDate: suggestion.dueDate,
-              }));
-              
-              newColumns[todoColumnIndex] = {
-                ...newColumns[todoColumnIndex],
-                cards: [...newColumns[todoColumnIndex].cards, ...newCards]
+        
+        setColumns(prevColumns => {
+          const newColumns = [...prevColumns];
+          
+          // Update original card to show it was processed
+          const targetColumnIndex = newColumns.findIndex(col => col.id === updatedCard.containerId);
+          if (targetColumnIndex !== -1) {
+            const cardIndex = newColumns[targetColumnIndex].cards.findIndex(card => card.id === updatedCard.id);
+            if (cardIndex !== -1) {
+              newColumns[targetColumnIndex].cards[cardIndex] = {
+                ...newColumns[targetColumnIndex].cards[cardIndex],
+                isLoading: false,
+                aiResponse: `AI processed: ${response.card_data.title} - ${response.card_data.description}`
               };
             }
+          }
+          
+          // Create a new card based on AI response in TODO column
+          const todoColumnIndex = newColumns.findIndex(col => col.id === 'todo');
+          if (todoColumnIndex !== -1) {
+            const newCard: TaskCard = {
+              id: `card-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              title: response.card_data.title,
+              description: response.card_data.description,
+              status: 'todo' as const,
+              containerId: 'todo',
+              assignees: [],
+              labels: [],
+              progress: 0,
+              autoCreated: true,
+            };
             
-            return newColumns;
-          });
-        } else {
-          // Handle AI error
-          setColumns(prevColumns => {
-            const newColumns = [...prevColumns];
-            const targetColumnIndex = newColumns.findIndex(col => col.id === updatedCard.containerId);
-            if (targetColumnIndex !== -1) {
-              const cardIndex = newColumns[targetColumnIndex].cards.findIndex(card => card.id === updatedCard.id);
-              if (cardIndex !== -1) {
-                newColumns[targetColumnIndex].cards[cardIndex] = {
-                  ...newColumns[targetColumnIndex].cards[cardIndex],
-                  isLoading: false,
-                  aiResponse: `Error: ${aiResult.error || 'Failed to get AI response'}`
-                };
-              }
-            }
-            return newColumns;
-          });
-        }
+            newColumns[todoColumnIndex] = {
+              ...newColumns[todoColumnIndex],
+              cards: [...newColumns[todoColumnIndex].cards, newCard]
+            };
+          }
+          
+          return newColumns;
+        });
       } catch (error) {
         // Handle error
         setColumns(prevColumns => {
